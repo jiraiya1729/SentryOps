@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button"
 import { MobileNav } from "./mobile-nav"
 import { useState } from "react"
 
-export function Header() {
+interface HeaderProps {
+  databaseConnected?: boolean
+}
+
+export function Header({ databaseConnected = false }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
@@ -29,9 +33,15 @@ export function Header() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-2">
-        <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <span>Connected</span>
+        <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span>K8s</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${databaseConnected ? "bg-success animate-pulse" : "bg-muted-foreground"}`} />
+            <span>DB</span>
+          </div>
         </div>
       </div>
 
