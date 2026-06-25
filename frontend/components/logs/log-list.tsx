@@ -1,21 +1,42 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import type { LogEntry } from "@/lib/types/api"
 import { LogLevelBadge } from "./log-level-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, ArrowDown } from "lucide-react"
 
 interface LogListProps {
   logs: LogEntry[]
   total: number
   isLoading: boolean
+  liveMode?: boolean
 }
 
-export function LogList({ logs, total, isLoading }: LogListProps) {
+export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false)
+  const isAtBottomRef = useRef(true)
+
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50
+    isAtBottomRef.current = atBottom
+    setIsUserScrolledUp(!atBottom && !!liveMode)
+  }, [liveMode])
+
+  useEffect(() => {
+    if (!liveMode || !isAtBottomRef.current) return
+    const el = scrollContainerRef.current
+    if (el) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [logs.length, liveMode])
 
   if (isLoading) {
     return (
@@ -47,13 +68,19 @@ export function LogList({ logs, total, isLoading }: LogListProps) {
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-lg border border-border overflow-hidden relative">
       <div className="bg-muted/50 h-8 px-3 flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground font-medium">
-          {total.toLocaleString()} log{total !== 1 ? "s" : ""} found
+          {liveMode
+            ? `${total.toLocaleString()} streaming`
+            : `${total.toLocaleString()} log${total !== 1 ? "s" : ""} found`}
         </span>
       </div>
-      <div className="divide-y divide-border max-h-[calc(100vh-360px)] overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="divide-y divide-border max-h-[calc(100vh-360px)] overflow-y-auto"
+      >
         {logs.map((log, index) => {
           const isExpanded = expandedIndex === index
           return (
@@ -140,6 +167,26 @@ export function LogList({ logs, total, isLoading }: LogListProps) {
           )
         })}
       </div>
+      {liveMode && isUserScrolledUp && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+          <Button
+            variant="secondary"
+            size="xs"
+            className="shadow-lg text-[11px] gap-1"
+            onClick={() => {
+              const el = scrollContainerRef.current
+              if (el) {
+                el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
+                setIsUserScrolledUp(false)
+                isAtBottomRef.current = true
+              }
+            }}
+          >
+            <ArrowDown className="h-3 w-3" />
+            Jump to latest
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

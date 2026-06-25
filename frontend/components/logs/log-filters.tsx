@@ -36,6 +36,10 @@ interface LogFiltersProps {
   onAutoRefreshToggle: () => void
   lastUpdatedText: string | null
   namespaceOptions: string[]
+  liveMode: boolean
+  onLiveModeToggle: () => void
+  isConnected?: boolean
+  linesPerSecond?: number
 }
 
 export function LogFilters({
@@ -53,6 +57,10 @@ export function LogFilters({
   onAutoRefreshToggle,
   lastUpdatedText,
   namespaceOptions,
+  liveMode,
+  onLiveModeToggle,
+  isConnected,
+  linesPerSecond,
 }: LogFiltersProps) {
 
   function toggleLevel(level: string) {
@@ -126,40 +134,70 @@ export function LogFilters({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3 text-muted-foreground" />
-          {TIME_RANGES.map((range) => (
-            <Button
-              key={range.value}
-              variant={timeRange === range.value ? "secondary" : "ghost"}
-              size="xs"
-              className="text-[11px] h-6 px-2"
-              onClick={() =>
-                onTimeRangeChange(timeRange === range.value ? null : range.value)
-              }
-            >
-              {range.label}
-            </Button>
-          ))}
-        </div>
+        {!liveMode && (
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3 text-muted-foreground" />
+            {TIME_RANGES.map((range) => (
+              <Button
+                key={range.value}
+                variant={timeRange === range.value ? "secondary" : "ghost"}
+                size="xs"
+                className="text-[11px] h-6 px-2"
+                onClick={() =>
+                  onTimeRangeChange(timeRange === range.value ? null : range.value)
+                }
+              >
+                {range.label}
+              </Button>
+            ))}
+          </div>
+        )}
 
         <div className="ml-auto flex items-center gap-2">
-          {lastUpdatedText && (
+          {liveMode && isConnected && linesPerSecond !== undefined && (
             <span className="text-[11px] text-muted-foreground">
-              Updated {lastUpdatedText}
+              Streaming... {linesPerSecond} lines/sec
             </span>
           )}
+
           <Button
-            variant={autoRefresh ? "secondary" : "ghost"}
+            variant={liveMode ? "default" : "ghost"}
             size="xs"
-            className="h-6 gap-1 text-[11px]"
-            onClick={onAutoRefreshToggle}
+            className={cn(
+              "h-6 gap-1.5 text-[11px]",
+              liveMode && "bg-green-600 hover:bg-green-700 text-white"
+            )}
+            onClick={onLiveModeToggle}
           >
-            <RefreshCw
-              className={cn("h-3 w-3", autoRefresh && "animate-spin")}
-            />
-            Auto
+            {liveMode && isConnected && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+            )}
+            Live
           </Button>
+
+          {!liveMode && (
+            <>
+              {lastUpdatedText && (
+                <span className="text-[11px] text-muted-foreground">
+                  Updated {lastUpdatedText}
+                </span>
+              )}
+              <Button
+                variant={autoRefresh ? "secondary" : "ghost"}
+                size="xs"
+                className="h-6 gap-1 text-[11px]"
+                onClick={onAutoRefreshToggle}
+              >
+                <RefreshCw
+                  className={cn("h-3 w-3", autoRefresh && "animate-spin")}
+                />
+                Auto
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

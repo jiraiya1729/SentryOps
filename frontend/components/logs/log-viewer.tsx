@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useDebounce } from "@/hooks/use-debounce"
+import { useLogStream } from "@/hooks/use-log-stream"
 import { searchLogs, getLogStats } from "@/lib/api/logs"
 import type { LogEntry, LogStatEntry } from "@/lib/types/api"
 import { LogFilters } from "./log-filters"
@@ -32,6 +33,7 @@ export function LogViewer() {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdatedText, setLastUpdatedText] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [liveMode, setLiveMode] = useState(false)
   const [namespaceOptions, setNamespaceOptions] = useState<string[]>([])
   const [timeRange, setTimeRange] = useState<number | null>(() => {
     if (sinceParam) {
@@ -47,6 +49,29 @@ export function LogViewer() {
   const lastFetchTimeRef = useRef<number | null>(null)
 
   const levels = levelParam ? levelParam.split(",") : []
+
+  const {
+    logs: streamLogs,
+    isConnected,
+    droppedCount,
+    linesPerSecond,
+  } = useLogStream({
+    enabled: liveMode,
+    namespace: namespaceParam || undefined,
+    pod: podParam || undefined,
+    level: levelParam || undefined,
+  })
+
+  function handleLiveModeToggle() {
+    setLiveMode((prev) => {
+      if (prev) {
+        setFetchTrigger((n) => n + 1)
+      } else {
+        setAutoRefresh(false)
+      }
+      return !prev
+    })
+  }
 
   function updateURL(updates: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -196,16 +221,34 @@ export function LogViewer() {
         onAutoRefreshToggle={() => setAutoRefresh((v) => !v)}
         lastUpdatedText={lastUpdatedText}
         namespaceOptions={namespaceOptions}
+        liveMode={liveMode}
+        onLiveModeToggle={handleLiveModeToggle}
+        isConnected={isConnected}
+        linesPerSecond={linesPerSecond}
       />
 
-      <LogHistogram buckets={stats} isLoading={isLoading && stats.length === 0} />
+      {!liveMode && (
+        <LogHistogram buckets={stats} isLoading={isLoading && stats.length === 0} />
+      )}
 
-      {error ? (
+      {liveMode && droppedCount > 0 && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-200 flex items-center gap-2">
+          <span className="font-medium">{droppedCount} lines dropped</span>
+          <span className="text-muted-foreground">(high throughput)</span>
+        </div>
+      )}
+
+      {error && !liveMode ? (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
           {error}
         </div>
       ) : (
-        <LogList logs={logs} total={total} isLoading={isLoading && logs.length === 0} />
+        <LogList
+          logs={liveMode ? streamLogs : logs}
+          total={liveMode ? streamLogs.length : total}
+          isLoading={!liveMode && isLoading && logs.length === 0}
+          liveMode={liveMode}
+        />
       )}
     </div>
   )
