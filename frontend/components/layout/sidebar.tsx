@@ -6,6 +6,7 @@ import {
   Layers,
   Server,
   Network,
+  FileText,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -19,6 +20,7 @@ const navigation = [
   { href: "/cluster/deployments", label: "Deployments", icon: Layers },
   { href: "/cluster/nodes", label: "Nodes", icon: Server },
   { href: "/cluster/namespaces", label: "Namespaces", icon: Network },
+  { href: "/cluster/logs", label: "Logs", icon: FileText },
 ]
 
 export function Sidebar() {
