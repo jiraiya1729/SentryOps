@@ -118,7 +118,7 @@ export function LogViewer() {
       since: since || undefined,
       until: until || undefined,
       limit: 100,
-      direction: "desc" as const,
+      direction: "backward" as const,
     }
 
     Promise.all([
@@ -235,6 +235,18 @@ export function LogViewer() {
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-200 flex items-center gap-2">
           <span className="font-medium">{droppedCount} lines dropped</span>
           <span className="text-muted-foreground">(high throughput)</span>
+        </div>
+      )}
+
+      {liveMode && !isConnected && streamLogs.length === 0 && (
+        <div className="rounded-lg border border-border bg-muted/30 p-8 flex flex-col items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-yellow-500" />
+            </span>
+            <span className="text-sm text-muted-foreground font-medium">Connecting to log stream...</span>
+          </div>
         </div>
       )}
 

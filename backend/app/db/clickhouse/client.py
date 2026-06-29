@@ -1,29 +1,33 @@
 from datetime import datetime
 from typing import Any
 
+import threading
+
 import clickhouse_connect
 from clickhouse_connect.driver.client import Client
 
 from app.core.config import settings
 
-_client: Client | None = None
+_local = threading.local()
+
 
 def get_clickhouse_client() -> Client:
-    global _client
-    if _client is None:
-        _client = clickhouse_connect.get_client(
-            host = settings.CLICKHOUSE_HOST,
-            port = settings.CLICKHOUSE_PORT,
-            username = settings.CLICKHOUSE_USER,
-            password = settings.CLICKHOUSE_PASSWORD,
-            database = settings.CLICKHOUSE_DATABASE,
-            settings = {
+    client = getattr(_local, "client", None)
+    if client is None:
+        client = clickhouse_connect.get_client(
+            host=settings.CLICKHOUSE_HOST,
+            port=settings.CLICKHOUSE_PORT,
+            username=settings.CLICKHOUSE_USER,
+            password=settings.CLICKHOUSE_PASSWORD,
+            database=settings.CLICKHOUSE_DATABASE,
+            connect_timeout=10,
+            send_receive_timeout=30,
+            settings={
                 "max_memory_usage": 2_000_000_000,
-                "connect_timeout": 10,
-                "send_receive_timeout": 30, 
             },
         )
-    return _client
+        _local.client = client
+    return client
 
 
 def check_clickhouse_health() -> dict[str, Any]:

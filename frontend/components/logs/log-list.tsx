@@ -67,19 +67,57 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
     )
   }
 
+  const levelBorderColor: Record<string, string> = {
+    FATAL: "border-l-red-500",
+    ERROR: "border-l-red-400",
+    WARN: "border-l-yellow-400",
+    INFO: "border-l-blue-400",
+    DEBUG: "border-l-zinc-500",
+    TRACE: "border-l-zinc-600",
+    UNKNOWN: "border-l-zinc-600",
+  }
+
+  const levelTextColor: Record<string, string> = {
+    FATAL: "text-red-400",
+    ERROR: "text-red-400",
+    WARN: "text-yellow-400",
+    INFO: "text-blue-400",
+    DEBUG: "text-zinc-500",
+    TRACE: "text-zinc-600",
+    UNKNOWN: "text-zinc-600",
+  }
+
   return (
-    <div className="rounded-lg border border-border overflow-hidden relative">
-      <div className="bg-muted/50 h-8 px-3 flex items-center justify-between">
-        <span className="text-[11px] text-muted-foreground font-medium">
+    <div className={cn(
+      "rounded-lg border border-border overflow-hidden relative",
+      liveMode && "border-green-500/20"
+    )}>
+      <div className={cn(
+        "h-9 px-4 flex items-center justify-between",
+        liveMode ? "bg-zinc-900/80 border-b border-green-500/10" : "bg-muted/50"
+      )}>
+        <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-2">
+          {liveMode && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+          )}
           {liveMode
-            ? `${total.toLocaleString()} streaming`
+            ? `${total.toLocaleString()} lines captured`
             : `${total.toLocaleString()} log${total !== 1 ? "s" : ""} found`}
         </span>
+        {liveMode && (
+          <span className="text-[10px] text-green-500/70 font-mono">LIVE TAIL</span>
+        )}
       </div>
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="divide-y divide-border max-h-[calc(100vh-360px)] overflow-y-auto"
+        className={cn(
+          "max-h-[calc(100vh-360px)] overflow-y-auto",
+          liveMode ? "bg-zinc-950/50" : "divide-y divide-border"
+        )}
       >
         {logs.map((log, index) => {
           const isExpanded = expandedIndex === index
@@ -87,8 +125,16 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
             <div key={index}>
               <div
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted/30 transition-colors font-mono text-xs",
-                  isExpanded && "bg-muted/20"
+                  "flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors font-mono text-xs",
+                  liveMode
+                    ? cn(
+                        "border-l-2 hover:bg-zinc-800/50",
+                        levelBorderColor[log.log_level] || "border-l-zinc-600"
+                      )
+                    : cn(
+                        "hover:bg-muted/30",
+                        isExpanded && "bg-muted/20"
+                      )
                 )}
                 onClick={() => setExpandedIndex(isExpanded ? null : index)}
               >
@@ -98,17 +144,40 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
                     isExpanded && "rotate-90"
                   )}
                 />
-                <span className="text-muted-foreground shrink-0 w-20 text-[11px]">
+                <span className={cn(
+                  "shrink-0 w-20 text-[11px]",
+                  liveMode ? "text-zinc-500" : "text-muted-foreground"
+                )}>
                   {formatTimestamp(log.timestamp)}
                 </span>
-                <LogLevelBadge level={log.log_level} />
-                <span className="text-muted-foreground shrink-0 max-w-32 truncate text-[11px]">
+                {liveMode ? (
+                  <span className={cn(
+                    "shrink-0 w-12 text-[10px] font-bold uppercase",
+                    levelTextColor[log.log_level] || "text-zinc-500"
+                  )}>
+                    {log.log_level}
+                  </span>
+                ) : (
+                  <LogLevelBadge level={log.log_level} />
+                )}
+                <span className={cn(
+                  "shrink-0 max-w-36 truncate text-[11px]",
+                  liveMode ? "text-cyan-400/70" : "text-muted-foreground"
+                )}>
                   {log.pod_name}
                 </span>
-                <span className="truncate text-foreground">{log.message}</span>
+                <span className={cn(
+                  "truncate",
+                  liveMode ? "text-zinc-300" : "text-foreground"
+                )}>
+                  {log.message}
+                </span>
               </div>
               {isExpanded && (
-                <div className="px-3 py-3 bg-muted/10 border-t border-border/50">
+                <div className={cn(
+                  "px-3 py-3 border-t border-border/50",
+                  liveMode ? "bg-zinc-900/60" : "bg-muted/10"
+                )}>
                   <div className="ml-5 space-y-3">
                     <div>
                       <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
@@ -152,7 +221,7 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
                         </div>
                         <div className="contents">
                           <dt className="text-muted-foreground">Node</dt>
-                          <dd className="text-foreground font-mono">{log.node_name}</dd>
+                          <dd className="text-foreground font-mono">{log.node_name || "—"}</dd>
                         </div>
                         <div className="contents">
                           <dt className="text-muted-foreground">Stream</dt>
@@ -172,7 +241,7 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
           <Button
             variant="secondary"
             size="xs"
-            className="shadow-lg text-[11px] gap-1"
+            className="shadow-lg text-[11px] gap-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600"
             onClick={() => {
               const el = scrollContainerRef.current
               if (el) {

@@ -7,7 +7,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-_redis_client: redis.redis | None = None
+_redis_client: redis.Redis | None = None
 
 
 async def get_redis_client()-> redis.Redis:
@@ -40,8 +40,8 @@ async def publish_log(log_entry: dict):
 
         await asyncio.gather(
             client.publish("logs:all", message),
-            client.publish(f"logs: {namespace}", message) if namespace else asyncio.sleep(0),
-            client.publish(f"logs: {namespace}:{pod_name}", message) if namespace and pod_name else asyncio.sleep(0),
+            client.publish(f"logs:{namespace}", message) if namespace else asyncio.sleep(0),
+            client.publish(f"logs:{namespace}:{pod_name}", message) if namespace and pod_name else asyncio.sleep(0),
         )
     except Exception as e:
         logger.debug(f"Redis publish error (non-fatal): {e}")
@@ -53,9 +53,9 @@ async def subscribe_logs(namespace: str | None = None, pod: str | None = None):
     pubsub = client.pubsub()
 
     if namespace and pod:
-        channel = f"logs: {namespace}:{pod}"
+        channel = f"logs:{namespace}:{pod}"
     elif namespace:
-        channel = f"logs: {namespace}"
+        channel = f"logs:{namespace}"
     else:
         channel = "logs:all"
     

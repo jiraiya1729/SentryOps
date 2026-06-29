@@ -1,36 +1,55 @@
 import asyncio
-import json
 import logging
-import time
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect  # noqa: F401
 from app.services.log_broadcaster import subscribe_logs
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags = ["websocket"])
 
-bATCH_INTERVAL = 0.1
+BATCH_INTERVAL = 0.1
 MAX_BATCH_SIZE = 50
 PING_INTERVAL = 30
 
 
 @router.websocket("/ws/logs")
-async def ws_logs_stream(
-    websocket: WebSocket,
-    namespace: str | None = Query(None),
-    pod: str | None = Query(None),
-    container: str | None = Query(None),
-    level: str | None = Query(None),
-):
+async def ws_logs_stream(websocket: WebSocket):
     await websocket.accept()
+
+    namespace = websocket.query_params.get("namespace")
+    pod = websocket.query_params.get("pod")
+    container = websocket.query_params.get("container")
+    level = websocket.query_params.get("level")
+
     logger.info(f"Websocket connected: namespace={namespace}, pod={pod}, level={level}")
 
     batch: list[dict] = []
     dropped_count = 0
-    last_send_time = time.monotonic()
+    send_lock = asyncio.Lock()
+
+    async def flush_batch():
+        nonlocal dropped_count
+        async with send_lock:
+            if not batch:
+                return
+            if dropped_count > 0:
+                await websocket.send_json({"type": "dropped", "count": dropped_count})
+                dropped_count = 0
+            for entry in batch:
+                await websocket.send_json({"type": "log", "data": entry})
+            batch.clear()
+
+    async def flush_timer():
+        try:
+            while True:
+                await asyncio.sleep(BATCH_INTERVAL)
+                await flush_batch()
+        except (WebSocketDisconnect, asyncio.CancelledError):
+            pass
 
     try:
         ping_task = asyncio.create_task(_ping_loop(websocket))
+        timer_task = asyncio.create_task(flush_timer())
 
         async for log_entry in subscribe_logs(namespace=namespace, pod=pod):
             if container and log_entry.get("container_name") != container:
@@ -38,23 +57,12 @@ async def ws_logs_stream(
             if level and log_entry.get("log_level") != level:
                 continue
 
-            if len(batch) >= MAX_BATCH_SIZE:
-                dropped_count += 1
-                batch.pop(0)
-            batch.append(log_entry)
+            async with send_lock:
+                if len(batch) >= MAX_BATCH_SIZE:
+                    dropped_count += 1
+                    batch.pop(0)
+                batch.append(log_entry)
 
-
-            elapsed = time.monotonic() - last_send_time
-            if elapsed >= bATCH_INTERVAL and batch:
-                if dropped_count > 0:
-                    await websocket.send_json({"type": "dropped", "count": dropped_count,})
-                    dropped_count = 0
-                
-                for entry in batch:
-                    await websocket.send_json({"type": "log", "data": entry})
-
-                batch = []
-                last_send_time = time.monotonic()
     except WebSocketDisconnect:
         logger.info("Websocket disconnected")
     except asyncio.CancelledError:
@@ -63,6 +71,7 @@ async def ws_logs_stream(
         logger.error(f"WebSocket error: {e}")
     finally:
         ping_task.cancel()
+        timer_task.cancel()
 
 
 async def _ping_loop(websocket: WebSocket):

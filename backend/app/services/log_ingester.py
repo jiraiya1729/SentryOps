@@ -7,10 +7,11 @@ from pathlib import Path
 
 from app.db.clickhouse.client import insert_logs
 from app.services.log_parser import parse_log_line
+from app.services.log_broadcaster import publish_log
 
-logger = Logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-bATCH_SIZE = 1000
+BATCH_SIZE = 1000
 FLUSH_INTERVAL = 1.0
 MAX_BUFFER_SIZE = 100_000
 MAX_RETRIES = 3
@@ -21,7 +22,7 @@ DEAD_LETTER_DIR = Path("/tmp/sentryops_dead_letters")
 
 class LogIngester:
 
-    def __init__(self):
+    def __init__(self, ingestion_queue: asyncio.Queue):
         self.queue = ingestion_queue
         self.buffer: list[dict] = []
         self.last_flush_time = time.monotonic()
@@ -78,9 +79,10 @@ class LogIngester:
 
 
                 parsed = parse_log_line(entry)
+                await publish_log(parsed)
                 self.buffer.append(parsed)
 
-                if len(self.buffer) >= bATCH_SIZE:
+                if len(self.buffer) >= BATCH_SIZE:
                     await self._flush()
 
             except asyncio.TimeoutError:
@@ -117,14 +119,15 @@ class LogIngester:
                 self.flush_count += 1
             else:
                 self.error_count += 1
-                await self._write_to_dead_letter(batch)
+                await self._write_dead_letter(batch)
 
 
     async def _insert_with_retry(self, batch: list[dict]) -> bool:
 
         for attempt in range(MAX_RETRIES):
             try:
-                pass
+                await asyncio.to_thread(insert_logs, batch)
+                return True
 
             except Exception as e:
                 logger.warning(f"ClickHouse insert failed (attempt {attempt + 1}/{MAX_RETRIES}: {e})")
@@ -147,7 +150,7 @@ class LogIngester:
             import json
 
             lines = [json.dumps(entry, default=str) for entry in batch]
-            filepath.write_text("/n".join(lines))
+            filepath.write_text("\n".join(lines))
             logger.info(f"Wrote {len(batch)} logs to dead letter: {filepath}")
 
 

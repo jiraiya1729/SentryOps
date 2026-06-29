@@ -23,9 +23,9 @@ class LogCollector:
 
     def __init__(self, ingestion_queue: asyncio.Queue):
         self.ingestion_queue = ingestion_queue
-        self.active_streams = dict[str, asyncio.Task] = {}
+        self.active_streams: dict[str, asyncio.Task] = {}
         self.excluded_namespaces = DEFAULT_EXCLUDED_NAMESPACES
-        self._running = FALSE
+        self._running = False
         self._semaphore = asyncio.Semaphore(MAX_CONCURRENT_STREAMS)
 
 
@@ -38,8 +38,7 @@ class LogCollector:
         logger.info("Log collector starting.....")
 
         asyncio.create_task(self._watch_pods())
-
-        await self._scan_existing_pods()
+        asyncio.create_task(self._scan_existing_pods())
 
     async def stop(self):
         self._running = False
@@ -72,22 +71,41 @@ class LogCollector:
 
         w = watch.Watch()
         resource_version = ""
+        loop = asyncio.get_running_loop()
 
         while self._running:
             try:
-                stream = await asyncio.to_thread(
-                    w.stream,
-                    core_v1.list_pod_for_all_namespaces,
-                    resource_version = resource_version or None,
-                    timeout_seconds = 300
-                )
-                
-                for event in stream:
-                    if not self._running:
-                        break
+                # Bridge blocking K8s Watch iteration to async via a queue.
+                # Iterating w.stream() directly blocks the event loop on each next().
+                queue: asyncio.Queue = asyncio.Queue(maxsize=500)
 
-                    event_type = event["type"]
-                    pod = event["object"]
+                def blocking_watch():
+                    try:
+                        for event in w.stream(
+                            core_v1.list_pod_for_all_namespaces,
+                            resource_version=resource_version or None,
+                            timeout_seconds=300,
+                        ):
+                            loop.call_soon_threadsafe(queue.put_nowait, ("event", event))
+                            if not self._running:
+                                w.stop()
+                                break
+                    except Exception as exc:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("error", exc))
+                    finally:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
+
+                watch_future = loop.run_in_executor(None, blocking_watch)
+
+                while True:
+                    kind, data = await queue.get()
+                    if kind == "done":
+                        break
+                    if kind == "error":
+                        raise data
+
+                    event_type = data["type"]
+                    pod = data["object"]
                     resource_version = pod.metadata.resource_version
 
                     ns = pod.metadata.namespace
@@ -97,9 +115,10 @@ class LogCollector:
                     if event_type in ("ADDED", "MODIFIED"):
                         if pod.status.phase == "Running":
                             await self._start_pod_stream(pod)
-                        elif event_type == "DELETED":
-                            await self._stop_pod_stream(pod)
+                    elif event_type == "DELETED":
+                        await self._stop_pod_stream(pod)
 
+                await watch_future
 
             except ApiException as e:
                 if e.status == 410:
@@ -114,7 +133,7 @@ class LogCollector:
                 await asyncio.sleep(5)
 
 
-    async def _start_pod_streams(self, pod):
+    async def _start_pod_stream(self, pod):
 
         namespace = pod.metadata.namespace
         pod_name = pod.metadata.name
@@ -126,7 +145,7 @@ class LogCollector:
 
         
         for container_status in pod.status.container_statuses:
-            container_name = container.status.name
+            container_name = container_status.name
             key = self._pod_key(namespace, pod_name, container_name)
 
             if key in self.active_streams and not self.active_streams[key].done():
@@ -145,7 +164,7 @@ class LogCollector:
             self.active_streams[key] = task
 
 
-    async def _stop_pod_streams(self, pod):
+    async def _stop_pod_stream(self, pod):
 
 
         namespace = pod.metadata.namespace
@@ -173,7 +192,7 @@ class LogCollector:
 
         key = self._pod_key(namespace, pod_name, container_name)
         backoff = INITIAL_BACKOFF
-        since_time = None
+        since_time: datetime | None = None
 
         async with self._semaphore:
             while self._running:
@@ -188,7 +207,8 @@ class LogCollector:
                     }
 
                     if since_time:
-                        kwargs["since_time"] = since_time
+                        elapsed = (datetime.now(timezone.utc) - since_time).total_seconds()
+                        kwargs["since_seconds"] = max(1, int(elapsed))
 
                     logger.debug(f" Starting log stream: {key}")
 
@@ -202,7 +222,12 @@ class LogCollector:
                         timestamp_str, message = self._parse_log_line(line)
 
                         if timestamp_str:
-                            since_time = timestamp_str
+                            try:
+                                since_time = datetime.fromisoformat(
+                                    timestamp_str.rstrip("Z").split(".")[0]
+                                ).replace(tzinfo=timezone.utc)
+                            except (ValueError, TypeError):
+                                pass
 
                         await self.ingestion_queue.put({
                             "timestamp": timestamp_str or datetime.now(timezone.utc).isoformat(),
@@ -216,8 +241,8 @@ class LogCollector:
                             "stream": "stdout",
                         })
 
+                    # Stream closed cleanly — reconnect immediately.
                     backoff = INITIAL_BACKOFF
-                    break
 
                 except asyncio.CancelledError:
                     break

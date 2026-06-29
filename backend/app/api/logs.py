@@ -1,5 +1,6 @@
 
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query
 
@@ -33,7 +34,7 @@ async def search_logs(
     namespace: str | None = Query(None, description = "Filter by namespace"),
     pod: str | None = Query(None, description = "Filter by pod name (support prefix with %)"),
     container: str | None = Query(None, description = "Filter by container name "),
-    level: str | None = Query("ih", description = "filter by lov level (ERROR, WARN, INFO, etc.)"),
+    level: str | None = Query(None, description="Filter by log level (ERROR, WARN, INFO, etc.)"),
     since: str = Query("1h", description="Time range start (relative: '1h', '30m', '7d' or ISO timestamp)"),
     until: str | None = Query(None, description="Time range end (ISO timestamp, defaults to now)"),
     limit: int = Query(100, ge=1, le=10000, description="Max lines to return"),
@@ -46,7 +47,8 @@ async def search_logs(
         else datetime.now(timezone.utc)
     )
 
-    result = query_logs(         
+    result = await asyncio.to_thread(
+        query_logs,
         query=q,
         namespace=namespace,
         pod=pod,
@@ -55,7 +57,8 @@ async def search_logs(
         since=since_dt,
         until=until_dt,
         limit=limit,
-        direction=direction,)
+        direction=direction,
+    )
 
     return {
         "logs": result["logs"],
@@ -87,7 +90,8 @@ async def log_stats(
         else datetime.now(timezone.utc)
     )
 
-    stats = query_log_stats(
+    stats = await asyncio.to_thread(
+        query_log_status,
         namespace=namespace,
         pod=pod,
         since=since_dt,
