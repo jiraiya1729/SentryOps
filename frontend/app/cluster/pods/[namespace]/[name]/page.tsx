@@ -4,6 +4,7 @@ import { getPodDetail, getPodEvents } from "@/lib/api/pods"
 import { PodMetadata } from "@/components/pod-detail/pod-metadata"
 import { ContainersList } from "@/components/pod-detail/containers-list"
 import { EventsTimeline } from "@/components/pod-detail/events-timeline"
+import { PodMetricsSection } from "@/components/pod-detail/pod-metrics-section"
 import { Button } from "@/components/ui/button"
 
 export default async function PodDetailPage({
@@ -35,6 +36,7 @@ export default async function PodDetailPage({
       <PodMetadata pod={pod} status={podStatus} />
       <ContainersList containers={pod.containers} />
       <EventsTimeline events={eventsData.events} />
+      <PodMetricsSection namespace={namespace} name={name} />
     </div>
   )
 }

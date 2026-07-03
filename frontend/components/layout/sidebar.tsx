@@ -6,6 +6,7 @@ import {
   Layers,
   Server,
   Network,
+  BarChart3,
   FileText,
   PanelLeftClose,
   PanelLeftOpen,
@@ -20,6 +21,7 @@ const navigation = [
   { href: "/cluster/deployments", label: "Deployments", icon: Layers },
   { href: "/cluster/nodes", label: "Nodes", icon: Server },
   { href: "/cluster/namespaces", label: "Namespaces", icon: Network },
+  { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/cluster/logs", label: "Logs", icon: FileText },
 ]
 
