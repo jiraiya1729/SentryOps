@@ -6,6 +6,9 @@ import {
   Layers,
   Server,
   Network,
+  BarChart3,
+  FileText,
+  Bell,
 } from "lucide-react"
 import {
   Sheet,
@@ -21,6 +24,9 @@ const navigation = [
   { href: "/cluster/deployments", label: "Deployments", icon: Layers },
   { href: "/cluster/nodes", label: "Nodes", icon: Server },
   { href: "/cluster/namespaces", label: "Namespaces", icon: Network },
+  { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
+  { href: "/cluster/logs", label: "Logs", icon: FileText },
+  { href: "/cluster/events", label: "Events", icon: Bell },
 ]
 
 interface MobileNavProps {

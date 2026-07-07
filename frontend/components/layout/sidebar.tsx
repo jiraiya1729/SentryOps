@@ -8,6 +8,7 @@ import {
   Network,
   BarChart3,
   FileText,
+  Bell,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -23,6 +24,7 @@ const navigation = [
   { href: "/cluster/namespaces", label: "Namespaces", icon: Network },
   { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/cluster/logs", label: "Logs", icon: FileText },
+  { href: "/cluster/events", label: "Events", icon: Bell },
 ]
 
 export function Sidebar() {
