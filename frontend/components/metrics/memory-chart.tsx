@@ -14,6 +14,7 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartTooltip } from "./chart-tooltip"
+import { EmptyState } from "@/components/shared/empty-state"
 
 const LINE_COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#eab308", "#f97316"]
 
@@ -67,6 +68,19 @@ export function MemoryChart({ data, series, memoryRequest, memoryLimit, onZoom }
     setRefAreaRight(null)
   }, [refAreaLeft, refAreaRight, onZoom])
 
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmptyState title="No memory data" message="No metrics collected yet." />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

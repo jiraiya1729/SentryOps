@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, RefreshCw } from "lucide-react"
+import { Network, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -55,7 +55,7 @@ export function MetricsFilters({
 
       <DropdownMenu>
         <DropdownMenuTrigger className="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 h-8 text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
-          <Clock className="h-3.5 w-3.5" />
+          <Network className="h-3.5 w-3.5" />
           {namespace || "All Namespaces"}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
