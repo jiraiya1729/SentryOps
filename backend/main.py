@@ -16,6 +16,8 @@ from app.api.metrics_query import router as metrics_query_router
 from app.api.events import router as events_router
 from app.core.config import settings
 from app.workers.log_collector import start_log_collector, stop_log_collector
+from app.workers.metric_collector import start_metrics_collector, stop_metrics_collector
+from app.workers.event_collector import start_event_collector, stop_event_collector
 from app.services.log_ingester import start_log_ingester, stop_log_ingester
 
 
@@ -24,9 +26,13 @@ async def lifespan(app: FastAPI):
     ingestion_queue = asyncio.Queue()
     await start_log_ingester(ingestion_queue)
     await start_log_collector(ingestion_queue)
+    await start_metrics_collector()
+    await start_event_collector()
     yield
     await stop_log_collector()
     await stop_log_ingester()
+    await stop_metrics_collector()
+    await stop_event_collector()
 
 
 app = FastAPI(title="SentryOps", lifespan=lifespan)

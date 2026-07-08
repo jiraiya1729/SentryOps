@@ -52,7 +52,7 @@ class MetricsCollector:
 
 
         if metrics_batch:
-            await self._insert_metrics(self, metrics_batch, timestamp)
+            await self._insert_metrics(metrics_batch, timestamp)
             logger.info(f"Inserted {len(metrics_batch)} metrics data points")
 
     async def _get_pod_metrics(self)-> list[dict]:
@@ -83,16 +83,16 @@ class MetricsCollector:
                         "namespace": namespace,
                         "pod_name": pod_name,
                         "container_name": container_name,
-                        "metrics_name": "cpu_usage_cores",
-                        "metrics_value": cpu_cores
+                        "metric_name": "cpu_usage_cores",
+                        "metric_value": cpu_cores
                     })
 
                     metrics.append({
                         "namespace": namespace,
                         "pod_name": pod_name,
                         "container_name": container_name,
-                        "metrics_name": "memory_usage_bytes",
-                        "metrics_value": memory_bytes
+                        "metric_name": "memory_usage_bytes",
+                        "metric_value": memory_bytes
                     })
 
 
@@ -120,7 +120,7 @@ class MetricsCollector:
             )
 
 
-            for items in result.get("items", []):
+            for item in result.get("items", []):
                 node_name = item["metadata"]["name"]
                 usage = item.get("usage", {})
 
@@ -206,6 +206,8 @@ class MetricsCollector:
 
         except Exception as e:
             logger.error(f"Failed to get pod resources specs: {e}")
+
+        return metrics
 
     async def _insert_metrics(self, metrics: list[dict], timestamp: datetime):
         client = get_clickhouse_client()

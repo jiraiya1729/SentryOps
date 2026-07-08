@@ -153,3 +153,20 @@ class EventCollector:
             "first_timestamp": first_ts.replace(tzinfo=timezone.utc) if first_ts else datetime.now(timezone.utc),
             "last_timestamp": last_ts.replace(tzinfo=timezone.utc) if last_ts else datetime.now(timezone.utc),
         }
+
+
+event_collector: EventCollector | None = None
+
+
+async def start_event_collector() -> EventCollector:
+    global event_collector
+    event_collector = EventCollector()
+    asyncio.create_task(event_collector.start())
+    return event_collector
+
+
+async def stop_event_collector():
+    global event_collector
+    if event_collector:
+        await event_collector.stop()
+        event_collector = None
