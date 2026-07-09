@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { getClusterSummary } from "@/lib/api/cluster"
+import { ChatPanel } from "@/components/chat/chat-panel"
 
 export default async function ClusterLayout({
   children,
@@ -16,6 +17,7 @@ export default async function ClusterLayout({
         <Header databaseConnected={summary?.database_connected ?? false} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
+      <ChatPanel />
     </div>
   )
 }

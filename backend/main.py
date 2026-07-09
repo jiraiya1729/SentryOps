@@ -14,6 +14,7 @@ from app.api.logs import router as logs_router
 from app.api.ws_logs import router as ws_router
 from app.api.metrics_query import router as metrics_query_router
 from app.api.events import router as events_router
+from app.api.ai_chat import router as ai_router
 from app.core.config import settings
 from app.workers.log_collector import start_log_collector, stop_log_collector
 from app.workers.metric_collector import start_metrics_collector, stop_metrics_collector
@@ -55,6 +56,7 @@ app.include_router(logs_router, prefix="/api/v1", tags=["logs"])
 app.include_router(ws_router)
 app.include_router(metrics_query_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="/api/v1")
 
 
 @app.get("/health")
