@@ -16,6 +16,17 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379"
 
+    # AWS Bedrock
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-1"
+    BEDROCK_MODEL_ID: str = "us.anthropic.claude-sonnet-4-6-20250514-v1:0"
+
+    # Langfuse (optional)
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_BASE_URL: str = "https://cloud.langfuse.com"
+
     K8S_CONTEXT: str | None = None
 
     CORS_ORIGIN: list[str] = ["http://localhost:3000"]

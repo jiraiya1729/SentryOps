@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from langchain.agents import create_agent
 
@@ -88,7 +88,7 @@ class ChatService:
         )
 
     
-    def __init__langfuse(self):
+    def _init_langfuse(self):
         if not settings.LANGFUSE_PUBLIC_KEY:
             return None
 
@@ -126,7 +126,7 @@ class ChatService:
     async def chat(self, session_id: str, user_message: str) -> str:
         config = self._build_config(session_id)
         result = self.agent.invoke(
-            {"messages": [{"role": "user", "content": "user_message"}]},
+            {"messages": [{"role": "user", "content": user_message}]},
             config = config,
         )
         final = [m for m in result["messages"] if m.type == "ai" and m.content]

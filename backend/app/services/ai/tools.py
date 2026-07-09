@@ -12,14 +12,11 @@ from app.db.clickhouse.client import query_logs, get_clickhouse_client
 @tool
 def get_pods(namespace: Optional[str] = None, status_filter: Optional[str] = None) -> str:
 
-    import asyncio
-
     if namespace:
         pods = core_v1.list_namespaced_pod(namespace)
     else:
         pods = core_v1.list_pod_for_all_namespaces()
 
-    
     results = []
     for pod in pods.items:
         status = _compute_pod_status(pod)
@@ -27,8 +24,8 @@ def get_pods(namespace: Optional[str] = None, status_filter: Optional[str] = Non
             if status.lower() != status_filter.lower():
                 continue
 
-        restarts = sum( cs.restart_count for cs in (pod.status.container_statuses or []))
-        
+        restarts = sum(cs.restart_count for cs in (pod.status.container_statuses or []))
+
         results.append({
             "name": pod.metadata.name,
             "namespace": pod.metadata.namespace,
@@ -37,13 +34,13 @@ def get_pods(namespace: Optional[str] = None, status_filter: Optional[str] = Non
             "node": pod.spec.node_name,
         })
 
-        return json.dumps({"pods": results[:20], "total": len(results)}, default=str)
+    return json.dumps({"pods": results[:20], "total": len(results)}, default=str)
 
 
 @tool
 def get_pod_detail(namespace: str, pod_name: str) -> str:
     pod = core_v1.read_namespaced_pod(pod_name, namespace)
-    
+
     containers = []
 
     for cs in pod.status.container_statuses or []:
@@ -66,18 +63,18 @@ def get_pod_detail(namespace: str, pod_name: str) -> str:
             "ready": cs.ready,
         })
 
-    event_resp = core_v1.list_namespaced_event(namespace, field_selector = f"involvedObject.name={pod_name}")
-    event = [
+    event_resp = core_v1.list_namespaced_event(namespace, field_selector=f"involvedObject.name={pod_name}")
+    events = [
         {
-            "type":e.type,
+            "type": e.type,
             "reason": e.reason,
             "message": e.message,
             "count": e.count,
             "last_seen": str(e.last_timestamp),
         }
         for e in sorted(
-            events_resp.items,
-            key = lambda x: x.last_timestamp or x.metadata.creation_timestamp,
+            event_resp.items,
+            key=lambda x: x.last_timestamp or x.metadata.creation_timestamp,
             reverse=True,
         )[:10]
     ]
@@ -93,11 +90,11 @@ def get_pod_detail(namespace: str, pod_name: str) -> str:
     }, default=str)
 
 @tool
-def search_logs(query: str, namespace: Optional[str]=None, pod:Optional[str]=None, level:Optional[str]=None, since: str = "1h", limit:int = 20):
-    limit = mi(limit, 50)
+def search_logs(query: str, namespace: Optional[str] = None, pod: Optional[str] = None, level: Optional[str] = None, since: str = "1h", limit: int = 20):
+    limit = min(limit, 50)
     now = datetime.now(timezone.utc)
     units = {"m": "minutes", "h": "hours", "d": "days"}
-    since_dt = now - timedelta(hours = 1)
+    since_dt = now - timedelta(hours=1)
     if since and since[-1] in units:
         try:
             n = int(since[:-1])
@@ -114,62 +111,60 @@ def search_logs(query: str, namespace: Optional[str]=None, pod:Optional[str]=Non
         "time_range": f"last {since}",
     }, default=str)
 
-    
 
 @tool
-def get_metrics(metrics: str, namspace: Optional[str]=None, pod:Optional[str]=None, since:str = "1h"):
-    
+def get_metrics(metrics: str, namespace: Optional[str] = None, pod: Optional[str] = None, since: str = "1h"):
+
     client = get_clickhouse_client()
     metric_name = "cpu_usage_cores" if metrics == "cpu" else "memory_usage_bytes"
 
-    conditions = ["timestamp >= now() - INTERVAL 5 MINUTE", "metric_name ={metric:String}"]
+    conditions = ["timestamp >= now() - INTERVAL 5 MINUTE", "metric_name = {metrics:String}"]
     query_params: dict = {"metrics": metric_name}
 
-    if namspace:
-        conditions.append("namespace = {ns.String}")
-        query_params["ns"] = namspace
+    if namespace:
+        conditions.append("namespace = {ns:String}")
+        query_params["ns"] = namespace
     if pod:
         conditions.append("pod_name = {pod:String}")
         query_params["pod"] = pod
 
-    where = " AND".join(conditions)
+    where = " AND ".join(conditions)
+    unit = "cores" if metrics == "cpu" else "bytes"
 
     sql = f"""
         SELECT
             namespace,
             pod_name,
             avg(metric_value) AS avg_val,
-            max(metric_value) AS max_val,
+            max(metric_value) AS max_val
         FROM metrics WHERE {where}
         GROUP BY namespace, pod_name ORDER BY avg_val DESC LIMIT 10
-
     """
 
-    result = client.query(sql, parameters = query_params)
-    unit = "cores" if metrics == "cpu" else "bytes"
+    result = client.query(sql, parameters=query_params)
 
     pods = [
         {
             "namespace": r[0],
             "pod": r[1],
-            f"avg_{metric}_{unit}": round(r[2], 4) if metrics == "cpu" else int(r[2]),
-            f"max_{metric}_{unit}": round(r[3], 4) if metrics == "cpu" else int(r[3]),
+            f"avg_{metrics}_{unit}": round(r[2], 4) if metrics == "cpu" else int(r[2]),
+            f"max_{metrics}_{unit}": round(r[3], 4) if metrics == "cpu" else int(r[3]),
         }
         for r in result.result_rows
     ]
 
-    return json.dumps({"metrics": metric, "pods": pods, "showing_top": len(pods)}, default=str)
+    return json.dumps({"metrics": metrics, "pods": pods, "showing_top": len(pods)}, default=str)
 
 @tool
-def get_events(namespace: Optional[str]=None, event_type: Optional[str]=None, resource_name: Optional[str]=None, since:str = "1h")-> str:
+def get_events(namespace: Optional[str] = None, event_type: Optional[str] = None, resource_name: Optional[str] = None, since: str = "1h") -> str:
     if namespace:
-        event_resp = core_v1.list_namespaced_event(namespace)
+        events_resp = core_v1.list_namespaced_event(namespace)
     else:
         events_resp = core_v1.list_event_for_all_namespaces()
 
     events = []
 
-    for e in event_resp.items:
+    for e in events_resp.items:
         if event_type and e.type != event_type:
             continue
         if resource_name and e.involved_object.name != resource_name:
@@ -185,12 +180,12 @@ def get_events(namespace: Optional[str]=None, event_type: Optional[str]=None, re
             "last_seen": str(e.last_timestamp),
         })
 
-    events.sort(key = lambda x: x["last_seen"] or "", reverse=True)
+    events.sort(key=lambda x: x["last_seen"] or "", reverse=True)
     return json.dumps({"events": events[:20], "total": len(events)}, default=str)
 
 @tool
-def get_deployments(namespace: Optional[str]=None) -> str:
-    
+def get_deployments(namespace: Optional[str] = None) -> str:
+
     if namespace:
         deps = apps_v1.list_namespaced_deployment(namespace)
     else:
@@ -208,7 +203,7 @@ def get_deployments(namespace: Optional[str]=None) -> str:
             health = "Degraded"
         else:
             health = "Unhealthy"
-        
+
         images = [c.image for c in d.spec.template.spec.containers]
 
         results.append({
@@ -224,24 +219,21 @@ def get_deployments(namespace: Optional[str]=None) -> str:
 
 
 
-def _compute_pod_status(pod)-> str:
-    
+def _compute_pod_status(pod) -> str:
+
     if pod.status.phase in ("Failed", "Succeeded"):
         return pod.status.phase
 
     for cs in pod.status.container_statuses or []:
         if cs.state.waiting:
             reason = cs.state.waiting.reason
-
             if reason:
                 return reason
         if cs.state.terminated:
             reason = cs.state.terminated.reason
-
             if reason:
                 return reason
     return pod.status.phase or "Unknown"
 
 
 ALL_TOOLS = [get_pods, get_pod_detail, search_logs, get_metrics, get_events, get_deployments]
-
