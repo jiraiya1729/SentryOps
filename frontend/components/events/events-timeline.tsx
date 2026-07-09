@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
-import { getEvents, getEventStats } from "@/lib/api/events"
+import { toast } from "sonner"
+import { getEvents, getEventStats, getCorrelatedEvents } from "@/lib/api/events"
 import { getNamespaces } from "@/lib/api/namespaces"
-import type { K8sEvent, EventStatsResponse, Namespace } from "@/lib/types/api"
+import type { K8sEvent, EventStatsResponse, Namespace, DetectedPattern } from "@/lib/types/api"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Network, RefreshCw, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useEventStream } from "@/hooks/use-event-stream"
+import { PatternAlerts } from "./pattern-alerts"
+import { ObjectTimeline, type SelectedResource } from "./object-timeline"
 
 const TIME_RANGES = ["1h", "6h", "24h", "7d"] as const
 
@@ -65,14 +69,15 @@ function StatsBar({ stats }: { stats: EventStatsResponse }) {
   )
 }
 
-function EventRow({ event }: { event: K8sEvent }) {
+interface EventRowProps {
+  event: K8sEvent
+  isNew?: boolean
+  onResourceClick: (r: SelectedResource) => void
+}
+
+function EventRow({ event, isNew, onResourceClick }: EventRowProps) {
   const [expanded, setExpanded] = useState(false)
   const isWarning = event.type === "Warning"
-
-  const resourceLink =
-    event.involved_object_kind === "Pod"
-      ? `/cluster/pods/${event.namespace}/${event.involved_object_name}`
-      : null
 
   return (
     <div
@@ -80,7 +85,8 @@ function EventRow({ event }: { event: K8sEvent }) {
         "border-l-2 rounded-r-md px-4 py-3 cursor-pointer transition-colors",
         isWarning
           ? "border-l-orange-500 bg-orange-500/5 hover:bg-orange-500/10"
-          : "border-l-zinc-700 hover:bg-muted/30"
+          : "border-l-zinc-700 hover:bg-muted/30",
+        isNew && "animate-in fade-in duration-500"
       )}
       onClick={() => setExpanded((v) => !v)}
     >
@@ -107,18 +113,28 @@ function EventRow({ event }: { event: K8sEvent }) {
               {event.reason}
             </span>
 
-            {resourceLink ? (
+            {event.involved_object_kind === "Pod" ? (
               <Link
-                href={resourceLink}
+                href={`/cluster/pods/${event.namespace}/${event.involved_object_name}`}
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
               >
                 {event.involved_object_kind}/{event.involved_object_name}
               </Link>
             ) : (
-              <span className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onResourceClick({
+                    namespace: event.namespace,
+                    kind: event.involved_object_kind,
+                    name: event.involved_object_name,
+                  })
+                }}
+                className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              >
                 {event.involved_object_kind}/{event.involved_object_name}
-              </span>
+              </button>
             )}
 
             <span className="text-[10px] text-muted-foreground">{event.namespace}</span>
@@ -164,13 +180,22 @@ export function EventsTimeline() {
   const [warningOnly, setWarningOnly] = useState(false)
   const [events, setEvents] = useState<K8sEvent[]>([])
   const [stats, setStats] = useState<EventStatsResponse | null>(null)
+  const [patterns, setPatterns] = useState<DetectedPattern[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const { newEvents, newEventKeys, isConnected, clearNewEvents } = useEventStream({
+    enabled: true,
+    namespace: namespace || undefined,
+    event_type: warningOnly ? "Warning" : undefined,
+    since: timeRange,
+  })
 
   const fetchData = useCallback(async () => {
     try {
-      const [eventsRes, statsRes] = await Promise.all([
+      const [eventsRes, statsRes, correlatedRes] = await Promise.all([
         getEvents({
           namespace: namespace || undefined,
           event_type: warningOnly ? "Warning" : undefined,
@@ -178,16 +203,19 @@ export function EventsTimeline() {
           limit: 200,
         }),
         getEventStats(namespace || undefined, timeRange),
+        getCorrelatedEvents(namespace || undefined),
       ])
       setEvents(eventsRes.events)
       setStats(statsRes)
+      setPatterns(correlatedRes.patterns)
       setLastUpdated(new Date())
+      clearNewEvents()
     } catch {
       // Keep previous data on error
     } finally {
       setLoading(false)
     }
-  }, [timeRange, namespace, warningOnly])
+  }, [timeRange, namespace, warningOnly, clearNewEvents])
 
   useEffect(() => {
     getNamespaces().then((res) => setNamespaces(res.items)).catch(() => {})
@@ -202,15 +230,39 @@ export function EventsTimeline() {
     }
   }, [fetchData])
 
+  // Toast for incoming Warning events via SSE
+  useEffect(() => {
+    const latest = newEvents[0]
+    if (!latest || latest.type !== "Warning") return
+    toast.warning(
+      `${latest.reason}: ${latest.involved_object_kind}/${latest.involved_object_name}`,
+      {
+        description:
+          latest.message.length > 80 ? `${latest.message.slice(0, 80)}…` : latest.message,
+        duration: 5000,
+      }
+    )
+  }, [newEvents])
+
   const timeSince = lastUpdated
     ? Math.round((Date.now() - lastUpdated.getTime()) / 1000)
     : null
+
+  // Merge SSE new events with polled list, deduplicating by key
+  const polledKeys = new Set(events.map((e) => `${e.namespace}/${e.name}/${e.timestamp}`))
+  const dedupedNew = newEvents.filter(
+    (e) => !polledKeys.has(`${e.namespace}/${e.name}/${e.timestamp}`)
+  )
+  const merged = [...dedupedNew, ...events]
 
   return (
     <div className="space-y-4">
       {/* Stats bar */}
       {!loading && stats && <StatsBar stats={stats} />}
       {loading && <Skeleton className="h-10 rounded-lg" />}
+
+      {/* Pattern alerts */}
+      {patterns.length > 0 && <PatternAlerts patterns={patterns} />}
 
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -255,12 +307,23 @@ export function EventsTimeline() {
           Warnings only
         </Button>
 
-        {timeSince !== null && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
-            <RefreshCw className="h-3 w-3" />
-            <span>Updated {timeSince}s ago</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 ml-auto">
+          {isConnected && (
+            <div className="flex items-center gap-1.5 text-xs text-green-400">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+              Live
+            </div>
+          )}
+          {timeSince !== null && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3" />
+              <span>Updated {timeSince}s ago</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Timeline */}
@@ -277,7 +340,7 @@ export function EventsTimeline() {
             </div>
           ))}
         </div>
-      ) : events.length === 0 ? (
+      ) : merged.length === 0 ? (
         <div className="rounded-lg border border-border">
           <EmptyState
             title="No events found"
@@ -286,11 +349,24 @@ export function EventsTimeline() {
         </div>
       ) : (
         <div className="space-y-1.5">
-          {events.map((event, i) => (
-            <EventRow key={`${event.name}-${event.timestamp}-${i}`} event={event} />
-          ))}
+          {merged.map((event, i) => {
+            const key = `${event.namespace}/${event.name}/${event.timestamp}`
+            return (
+              <EventRow
+                key={`${key}-${i}`}
+                event={event}
+                isNew={newEventKeys.has(key)}
+                onResourceClick={setSelectedResource}
+              />
+            )
+          })}
         </div>
       )}
+
+      <ObjectTimeline
+        resource={selectedResource}
+        onClose={() => setSelectedResource(null)}
+      />
     </div>
   )
 }
