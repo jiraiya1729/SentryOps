@@ -9,6 +9,7 @@ import {
   BarChart3,
   FileText,
   Bell,
+  Shield,
 } from "lucide-react"
 import {
   Sheet,
@@ -27,6 +28,7 @@ const navigation = [
   { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/cluster/logs", label: "Logs", icon: FileText },
   { href: "/cluster/events", label: "Events", icon: Bell },
+  { href: "/cluster/guardian", label: "Guardian", icon: Shield },
 ]
 
 interface MobileNavProps {

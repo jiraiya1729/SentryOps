@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react"
 import { NavItem } from "./nav-item"
+import { GuardianNavItem } from "@/components/guardian/guardian-nav-item"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { cn } from "@/lib/utils"
 
@@ -52,6 +53,7 @@ export function Sidebar() {
         {navigation.map((item) => (
           <NavItem key={item.href} {...item} collapsed={collapsed} />
         ))}
+        <GuardianNavItem collapsed={collapsed} />
       </nav>
 
       <div className="p-3 border-t border-sidebar-border">
