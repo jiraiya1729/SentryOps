@@ -15,11 +15,14 @@ from app.api.ws_logs import router as ws_router
 from app.api.metrics_query import router as metrics_query_router
 from app.api.events import router as events_router
 from app.api.ai_chat import router as ai_router
+from app.api.investigations import router as investigations_router
+from app.api.approvals import router as approvals_router
 from app.core.config import settings
 from app.workers.log_collector import start_log_collector, stop_log_collector
 from app.workers.metric_collector import start_metrics_collector, stop_metrics_collector
 from app.workers.event_collector import start_event_collector, stop_event_collector
 from app.services.log_ingester import start_log_ingester, stop_log_ingester
+from app.guardian.scheduler import start_guardian, stop_guardian
 
 
 @asynccontextmanager
@@ -29,7 +32,9 @@ async def lifespan(app: FastAPI):
     await start_log_collector(ingestion_queue)
     await start_metrics_collector()
     await start_event_collector()
+    await start_guardian()
     yield
+    await stop_guardian()
     await stop_log_collector()
     await stop_log_ingester()
     await stop_metrics_collector()
@@ -57,6 +62,8 @@ app.include_router(ws_router)
 app.include_router(metrics_query_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
+app.include_router(investigations_router, prefix="/api/v1")
+app.include_router(approvals_router, prefix="/api/v1")
 
 
 @app.get("/health")

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from app.guardian.graph import investigation_app, resume_investigation
 from app.guardian.scheduler import guardian_scheduler
 from app.guardian.state import InvestigationState
 
@@ -26,10 +27,10 @@ async def list_investigations(status: str | None = Query(None, description="Filt
     for inv_id in active_ids:
         try:
             config = {"configurable": {"thread_id": inv_id}}
-            state = await Investigation_app.aget_state(config)
+            state = await investigation_app.aget_state(config)
             if state and state.values:
                 inv_data = _format_investigation(inv_id, state.values)
-                if state and inv_data["status"] != status:
+                if status and inv_data["status"] != status:
                     continue
 
                 investigations.append(inv_data)
@@ -52,7 +53,7 @@ async def get_investigation(investigation_id: str):
     config = {"configurable": {"thread_id": investigation_id}}
 
     try:
-        pass
+        state = await investigation_app.aget_state(config)
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Investigation not found: {e}")
 

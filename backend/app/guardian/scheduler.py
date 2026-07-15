@@ -30,7 +30,7 @@ class GuardianScheduler:
         )
 
     async def stop(self):
-        self_running = False
+        self._running = False
         if self._task:
             self._task.cancel()
             try:
@@ -42,7 +42,7 @@ class GuardianScheduler:
     async def _run_loop(self):
         while self._running:
             try:
-                self._tick()
+                await self._tick()
             except Exception as e:
                 logger.error(f"Guardian scheduler tick failed: {e}")
             
@@ -98,7 +98,7 @@ class GuardianScheduler:
             if now - started > max_duration
         ]
 
-        for inv_id in state:
+        for inv_id in stale:
             logger.warning(f"Investigation {inv_id} timed out, removing from active set")
             del self._active_investigations[inv_id]
 
@@ -107,14 +107,14 @@ class GuardianScheduler:
         self._active_investigations.pop(investigation_id, None)
 
 
-    async def trigger_manual(self, description: str, namespace: str | None = None, resource_name: str | None = None) -> str:
+    async def trigger_manual(self, description: str, namespace: str | None = None, resource_kind: str | None = None, resource_name: str | None = None) -> str:
         investigation_id = await start_investigation(
             trigger_type = "manual",
-            trgger_source = "user",
+            trigger_source = "user",
             description = description,
             namespace=namespace,
-            resource_kind = resource_kind,
-            resouce_name=resource_name,
+            resource_kind=resource_kind,
+            resource_name=resource_name,
         )
 
         self._active_investigations[investigation_id] = datetime.now(timezone.utc)

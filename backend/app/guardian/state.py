@@ -2,9 +2,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 from pydantic import BaseModel, Field
-from langgraph.graph import MessageState
 
-class InvestigationState(MessageState):
+
+class InvestigationState(str, Enum):
     PENDING = "pending"
     GATHERING = "gathering"
     ANALYZING = "analyzing"
@@ -12,6 +12,9 @@ class InvestigationState(MessageState):
     EXECUTING = "executing"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+InvestigationStatus = InvestigationState
 
 class Severity(str, Enum):
     CRITICAL = "critical"
@@ -40,8 +43,8 @@ class RootCause(BaseModel):
     summary: str
     confidence: float
     category: str
-    affected_resources: list(str) = Field(default_factory=list)
-    evidence_refs: list(str) = Field(default_factory=list)
+    affected_resources: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class Remediation(BaseModel):
@@ -59,7 +62,7 @@ class Remediation(BaseModel):
 class GuardianState(BaseModel):
 
     investigation_id: str = ""
-    status: InvestigationStatus = InvestigationStatus.PENDING
+    status: InvestigationState = InvestigationState.PENDING
     started_at: datetime | None = None
     completed_at: datetime | None = None
 
@@ -72,7 +75,7 @@ class GuardianState(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
 
     severity: Severity = Severity.INFO
-    root_cause: list[RootCause] = Field(default_factory=list)
+    root_causes: list[RootCause] = Field(default_factory=list)
     summary: str = ""
 
     remediations: list[Remediation] = Field(default_factory=list)

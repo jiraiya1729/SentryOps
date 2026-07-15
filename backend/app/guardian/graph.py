@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from app.guardian.state import (GuardianState, InvestigationState, Severity)
+from app.guardian.state import (GuardianState, InvestigationState, InvestigationStatus, Severity)
+from app.guardian.nodes.gather import gather_evidence_node
 from app.guardian.nodes.analyze import analyze_node
 from app.guardian.nodes.remediate import decide_remediation_node
 from app.guardian.nodes.execute import execute_node
@@ -53,6 +54,8 @@ def build_guardian_graph():
     return graph
 
 
+investigation_app = build_guardian_graph().compile(checkpointer=MemorySaver())
+
 
 async def await_approval_node(state: GuardianState) -> dict:
     return {
@@ -75,7 +78,7 @@ async def start_investigation(
 
     initial_state = {
         "investigation_id": investigation_id,
-        "status": InvestigationStatus.GATHERING,
+        "status": InvestigationState.GATHERING,
         "started_at": datetime.now(timezone.utc),
         "trigger": InvestigationTrigger(
             type=trigger_type,
@@ -86,7 +89,6 @@ async def start_investigation(
         "namespace": namespace,
         "resource_kind": resource_kind,
         "resource_name": resource_name,
-        "messages": [],
         "evidence": [],
         "root_causes": [],
         "remediations": [],

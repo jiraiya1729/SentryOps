@@ -6,7 +6,7 @@ from app.core.k8s_client import core_v1
 from app.db.clickhouse.client import get_clickhouse_client
 from app.guardian.config import guardian_config
 
-logger = logger.getLogger("__name__")
+logger = logging.getLogger(__name__)
 
 class AnomalyDetector:
     def __init__(self):
@@ -103,7 +103,7 @@ class AnomalyDetector:
                                 "container": cs.name,
                                 "exit_code": cs.last_state.terminated.exit_code,
                             },})
-            return anomalies
+        return anomalies
 
     async def _check_resource_pressure(self) -> list[dict]:
         
@@ -115,9 +115,9 @@ class AnomalyDetector:
                 avg(metric_value) as avg_val,
                 max(metric_value) as max_val
             FROM metrics
-            WHERE timestamp >= now() - INTERVAL 15 MINUTE)
+            WHERE timestamp >= now() - INTERVAL 15 MINUTE
                 AND metric_name IN ('cpu_usage_cores', 'memory_usage_bytes')
-            GROUP BY namespace, pod_name, metrc_name
+            GROUP BY namespace, pod_name, metric_name
             HAVING max_val > 0
             ORDER BY max_val DESC
             LIMIT 50
@@ -130,7 +130,7 @@ class AnomalyDetector:
             if ns in ("kube-system", "kube-public"):
                 continue
 
-            if metric == "cpu_usage_core" and max_val > guardian_config.CPU_SPIKE_THRESHOLD:
+            if metric == "cpu_usage_cores" and max_val > guardian_config.CPU_SPIKE_THRESHOLD:
                 anomalies.append({
                     "type": "cpu_pressure",
                     "severity": "high" if max_val > 0.95 else "medium",
@@ -173,7 +173,7 @@ class AnomalyDetector:
 
         for row in result.result_rows:
             ns, pod, error_count, total_count = row
-            error_count = error_count / total_count if total_count > 0 else 0
+            error_rate = error_count / total_count if total_count > 0 else 0
 
             anomalies.append({
                 "type": "error_spike",
@@ -215,7 +215,7 @@ class AnomalyDetector:
             if ns in {"kube-system",}:
                 continue
 
-            severity = "critical" if reason in ("OOMKilling", "FaileScheduling") else "medium"
+            severity = "critical" if reason in ("OOMKilling", "FailedScheduling") else "medium"
 
             anomalies.append({
                 "type": "event_pattern",

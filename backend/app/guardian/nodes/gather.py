@@ -54,7 +54,7 @@ async def _gather_metrics(state: GuardianState) -> Evidence | None:
 
     where = " AND ".join(conditions)
 
-    sql = """
+    sql = f"""
         SELECT
             toStartOfMinute(timestamp) AS minute,
             metric_name,
@@ -62,8 +62,8 @@ async def _gather_metrics(state: GuardianState) -> Evidence | None:
             max(metric_value) AS max_val
         FROM metrics
         WHERE {where}
-        GROUP BY minute, metric_name,
-        ORDER BY minute DESC,
+        GROUP BY minute, metric_name
+        ORDER BY minute DESC
         LIMIT 60
     """
 
@@ -91,7 +91,7 @@ async def _gather_metrics(state: GuardianState) -> Evidence | None:
         if cpu_rows:
             max_cpu = max(r["max"] for r in cpu_rows)
             summary_parts.append(f"CPU peak: {max_cpu:.3f} cores")
-        if mem_rows:
+        if memory_rows:
             max_mem = max(r["max"] for r in memory_rows)
             summary_parts.append(f"Memory peak: {max_mem / 1e6:.0f} MB")
         
@@ -122,22 +122,17 @@ async def _gather_logs(state: GuardianState) -> Evidence | None:
         params["ns"] = state.namespace
 
     if state.resource_name:
-        conditions.append("pod name LIKE {pod:String}")
-        params["ns"] = state.namespace
-
-    if state.resource_name:
-        conditions.append("pod name LIKE {pod:String}")
+        conditions.append("pod_name LIKE {pod:String}")
         params["pod"] = f"%{state.resource_name}"
 
-    
     where = " AND ".join(conditions)
 
     sql = f"""
         SELECT timestamp, namespace, pod_name, level, message
-            FROM logs,
-            WHERE {where}
-            ORDER BY timestamp DESC
-            LIMIT 30
+        FROM logs
+        WHERE {where}
+        ORDER BY timestamp DESC
+        LIMIT 30
     """
 
     try:
@@ -172,9 +167,9 @@ async def _gather_logs(state: GuardianState) -> Evidence | None:
 
 async def _gather_events(state: GuardianState) -> Evidence | None:
     client = get_clickhouse_client()
-    since = datetime.now(timezon.utc) - timedelta(minutes = 30)
+    since = datetime.now(timezone.utc) - timedelta(minutes=30)
 
-    conditions = ["timestmap >= {since:DateTime64(3)}"]
+    conditions = ["timestamp >= {since:DateTime64(3)}"]
     params: dict = {"since": since}
 
     if state.namespace:
@@ -186,9 +181,9 @@ async def _gather_events(state: GuardianState) -> Evidence | None:
         params["name"] = state.resource_name
 
     where = " AND ".join(conditions)
-    sql = """
+    sql = f"""
         SELECT
-            timestamp, namespace, type, reason, message
+            timestamp, namespace, type, reason, message,
             involved_object_kind, involved_object_name, count
 
         FROM k8s_events
@@ -240,7 +235,7 @@ async def _gather_k8s_state(state: GuardianState) -> Evidence | None:
         logger.error(f"k8s state gathering failed: {e}")
         return None
 
-async def _gather_pod_state(state: GuardianState) -> Evidence | None:
+async def _gather_pod_state(namespace: str, pod_name: str) -> Evidence | None:
     try:
         pod = await asyncio.to_thread(core_v1.read_namespaced_pod, pod_name, namespace)
 
@@ -312,7 +307,7 @@ async def _gather_namespace_state(namespace: str) -> Evidence | None:
             pod_summary["pending"] += 1
 
         for cs in pod.status.container_statuses or []:
-            if cs.status.waiting and cs.status.waiting.reason == "CrashLoopBackOff":
+            if cs.state.waiting and cs.state.waiting.reason == "CrashLoopBackOff":
                 pod_summary["crashloop"] += 1
                 problem_pods.append({
                     "name": pod.metadata.name,
@@ -325,7 +320,7 @@ async def _gather_namespace_state(namespace: str) -> Evidence | None:
 
     return Evidence(
         source = "k8s_state",
-        summary = f"Namespace {namespace}: {pod_summary['total']} pods ({pod_summary["running"]} running, {pod_summary["failed"]} failed, {pod_summary['crashloop']} crash-looping)",
+        summary = f"Namespace {namespace}: {pod_summary['total']} pods ({pod_summary['running']} running, {pod_summary['failed']} failed, {pod_summary['crashloop']} crash-looping)",
         data = {"pod_summary": pod_summary, "problem_pods": problem_pods[:10]},
     )
 
