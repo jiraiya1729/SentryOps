@@ -222,4 +222,6 @@ setup/
 details/
 
 .claude/
+.agents/
+.agent/
 CLAUDE.md
