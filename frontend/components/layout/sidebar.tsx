@@ -9,6 +9,8 @@ import {
   BarChart3,
   FileText,
   Bell,
+  Activity,
+  GitCompare,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -17,16 +19,43 @@ import { GuardianNavItem } from "@/components/guardian/guardian-nav-item"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { cn } from "@/lib/utils"
 
-const navigation = [
+const OVERVIEW = [
   { href: "/cluster", label: "Overview", icon: LayoutDashboard },
+]
+
+const RESOURCES = [
   { href: "/cluster/pods", label: "Pods", icon: Box },
-  { href: "/cluster/deployments", label: "Deployments", icon: Layers },
   { href: "/cluster/nodes", label: "Nodes", icon: Server },
   { href: "/cluster/namespaces", label: "Namespaces", icon: Network },
-  { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
-  { href: "/cluster/logs", label: "Logs", icon: FileText },
-  { href: "/cluster/events", label: "Events", icon: Bell },
+  { href: "/cluster/deployments", label: "Deployments", icon: Layers },
 ]
+
+const OBSERVABILITY = [
+  { href: "/cluster/logs", label: "Logs", icon: FileText },
+  { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
+  { href: "/cluster/events", label: "Events", icon: Activity },
+  { href: "/cluster/changes", label: "Changes", icon: GitCompare },
+]
+
+const INTELLIGENCE = [
+  { href: "/cluster/alerts", label: "Alerts", icon: Bell },
+  { href: "/cluster/dashboards", label: "Dashboards", icon: LayoutDashboard },
+]
+
+function SectionLabel({
+  label,
+  collapsed,
+}: {
+  label: string
+  collapsed: boolean
+}) {
+  if (collapsed) return <div className="my-1 border-t border-sidebar-border/40" />
+  return (
+    <p className="mt-3 mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+      {label}
+    </p>
+  )
+}
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
@@ -49,11 +78,27 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="flex-1 flex flex-col gap-1 p-3">
-        {navigation.map((item) => (
+      <nav className="flex-1 flex flex-col p-3 overflow-y-auto">
+        <SectionLabel label="Overview" collapsed={collapsed} />
+        {OVERVIEW.map((item) => (
           <NavItem key={item.href} {...item} collapsed={collapsed} />
         ))}
+
+        <SectionLabel label="Resources" collapsed={collapsed} />
+        {RESOURCES.map((item) => (
+          <NavItem key={item.href} {...item} collapsed={collapsed} />
+        ))}
+
+        <SectionLabel label="Observability" collapsed={collapsed} />
+        {OBSERVABILITY.map((item) => (
+          <NavItem key={item.href} {...item} collapsed={collapsed} />
+        ))}
+
+        <SectionLabel label="Intelligence" collapsed={collapsed} />
         <GuardianNavItem collapsed={collapsed} />
+        {INTELLIGENCE.map((item) => (
+          <NavItem key={item.href} {...item} collapsed={collapsed} />
+        ))}
       </nav>
 
       <div className="p-3 border-t border-sidebar-border">
