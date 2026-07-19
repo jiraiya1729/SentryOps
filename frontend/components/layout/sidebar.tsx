@@ -11,6 +11,7 @@ import {
   Bell,
   Activity,
   GitCompare,
+  Waypoints,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -34,6 +35,7 @@ const OBSERVABILITY = [
   { href: "/cluster/logs", label: "Logs", icon: FileText },
   { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/cluster/events", label: "Events", icon: Activity },
+  { href: "/cluster/traces", label: "Traces", icon: Waypoints },
   { href: "/cluster/changes", label: "Changes", icon: GitCompare },
 ]
 

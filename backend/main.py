@@ -20,6 +20,7 @@ from app.api.approvals import router as approvals_router
 from app.api.dashboards import router as dashboards_router
 from app.api.alert_suggestions import router as alerts_suggestions_router
 from app.api.changes import router as changes_router
+from app.api.traces import router as traces_router
 from app.core.config import settings
 from app.workers.log_collector import start_log_collector, stop_log_collector
 from app.workers.metric_collector import start_metrics_collector, stop_metrics_collector
@@ -70,6 +71,7 @@ app.include_router(approvals_router, prefix="/api/v1")
 app.include_router(dashboards_router, prefix="/api/v1")
 app.include_router(alerts_suggestions_router, prefix="/api/v1")
 app.include_router(changes_router, prefix="/api/v1")
+app.include_router(traces_router, prefix="/api/v1")
 
 
 @app.get("/health")
