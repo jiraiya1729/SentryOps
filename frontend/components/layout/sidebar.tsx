@@ -36,6 +36,7 @@ const OBSERVABILITY = [
   { href: "/cluster/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/cluster/events", label: "Events", icon: Activity },
   { href: "/cluster/traces", label: "Traces", icon: Waypoints },
+  { href: "/cluster/timeline", label: "Timeline", icon: Activity },
   { href: "/cluster/changes", label: "Changes", icon: GitCompare },
 ]
 

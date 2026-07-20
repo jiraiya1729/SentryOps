@@ -1,9 +1,15 @@
-from pydantic_settings import BaseSettings
+from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     DEBUG: bool = False
     APP_NAME: str = "SentryOps"
+    FRONTEND_URL: str = "http://localhost:3000"
+    DOCS_URL: str = "https://docs.sentryops.io"
 
     DATABASE_URL: str = "postgresql+asyncpg://sentryops:sentryops@localhost:5432/sentryops"
 
@@ -12,7 +18,6 @@ class Settings(BaseSettings):
     CLICKHOUSE_USER: str = "default"
     CLICKHOUSE_PASSWORD: str = ""
     CLICKHOUSE_DATABASE: str = "sentryops"
-
 
     REDIS_URL: str = "redis://localhost:6379"
 
@@ -34,7 +39,16 @@ class Settings(BaseSettings):
 
     CORS_ORIGIN: list[str] = ["http://localhost:3000"]
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    # GitHub Integration
+    GITHUB_APP_ID: Optional[int] = None
+    GITHUB_APP_PRIVATE_KEY: Optional[str] = None
+    GITHUB_WEBHOOK_SECRET: Optional[str] = None
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+
+    # Guardian
+    GUARDIAN_AUTO_ROLLBACK_ENABLED: bool = False
+    DEPLOY_VERIFICATION_ENABLED: bool = True
 
 
 settings = Settings()

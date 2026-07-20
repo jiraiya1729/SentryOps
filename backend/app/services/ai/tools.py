@@ -271,4 +271,49 @@ async def correlate_signals(
     return await execute_trace_tool("correlate_signals", params)
 
 
-ALL_TOOLS = [get_pods, get_pod_detail, search_logs, get_metrics, get_events, get_deployments, search_traces, get_service_latency, correlate_signals]
+@tool
+async def get_recent_deployments_tool(
+    namespace: Optional[str] = None,
+    hours: int = 24,
+    limit: int = 20,
+) -> str:
+    """Get recent deployments in the cluster, optionally filtered by namespace."""
+    from app.services.ai.deploy_tools import get_recent_deployments
+    result = await get_recent_deployments(namespace=namespace, hours=hours, limit=limit)
+    return json.dumps(result, default=str)
+
+
+@tool
+async def get_deployment_health_tool(namespace: str, deployment_name: str) -> str:
+    """Get health status and verification results for a specific deployment."""
+    from app.services.ai.deploy_tools import get_deployment_health
+    result = await get_deployment_health(namespace=namespace, deployment_name=deployment_name)
+    return json.dumps(result, default=str)
+
+
+@tool
+async def get_deploy_diff_tool(namespace: str, deployment_name: str, owner: str, repo: str) -> str:
+    """Get git diff for the most recent deployment. Shows what code changed."""
+    from app.services.ai.deploy_tools import get_deploy_diff
+    result = await get_deploy_diff(namespace=namespace, deployment_name=deployment_name, owner=owner, repo=repo)
+    return json.dumps(result, default=str)
+
+
+@tool
+async def find_deployment_for_incident_tool(
+    namespace: str,
+    incident_time: str,
+    window_minutes: int = 30,
+) -> str:
+    """Find deployments that occurred shortly before an incident. Helps correlate incidents with code changes."""
+    from app.services.ai.deploy_tools import find_deployment_for_incident
+    result = await find_deployment_for_incident(namespace=namespace, incident_time=incident_time, window_minutes=window_minutes)
+    return json.dumps(result, default=str)
+
+
+ALL_TOOLS = [
+    get_pods, get_pod_detail, search_logs, get_metrics, get_events, get_deployments,
+    search_traces, get_service_latency, correlate_signals,
+    get_recent_deployments_tool, get_deployment_health_tool,
+    get_deploy_diff_tool, find_deployment_for_incident_tool,
+]

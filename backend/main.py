@@ -22,7 +22,10 @@ from app.api.alert_suggestions import router as alerts_suggestions_router
 from app.api.changes import router as changes_router
 from app.api.traces import router as traces_router
 from app.api.correlation import router as correlation_router
+from app.api.deployments_history import router as deployments_history_router
+from app.api.github_webhooks import router as github_webhooks_router
 from app.core.config import settings
+from app.integrations.github.deploy_detector import deployment_detector
 from app.workers.log_collector import start_log_collector, stop_log_collector
 from app.workers.metric_collector import start_metrics_collector, stop_metrics_collector
 from app.workers.event_collector import start_event_collector, stop_event_collector
@@ -40,7 +43,11 @@ async def lifespan(app: FastAPI):
     await start_event_collector()
     await start_guardian()
     await start_otlp_server(settings.OTLP_GRPC_PORT)
+    if settings.DEPLOY_VERIFICATION_ENABLED:
+        await deployment_detector.start()
     yield
+    if settings.DEPLOY_VERIFICATION_ENABLED:
+        await deployment_detector.stop()
     await stop_otlp_server()
     await stop_guardian()
     await stop_log_collector()
@@ -77,11 +84,17 @@ app.include_router(alerts_suggestions_router, prefix="/api/v1")
 app.include_router(changes_router, prefix="/api/v1")
 app.include_router(traces_router, prefix="/api/v1")
 app.include_router(correlation_router, prefix="/api/v1")
+app.include_router(deployments_history_router, prefix="/api/v1", tags=["deployments_history"])
+app.include_router(github_webhooks_router, tags=["github"])
 
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "github_integration": settings.GITHUB_APP_ID is not None,
+        "deploy_verification_enabled": settings.DEPLOY_VERIFICATION_ENABLED,
+    }
 
 
 @app.get("/")
