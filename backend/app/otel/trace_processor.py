@@ -74,7 +74,7 @@ def _span_to_row(span, service_name: str, namespace: str, pod_name: str, node_na
     events = []
 
     for event in span.events:
-        event.append({
+        events.append({
             "name": event.name,
             "time_ns": event.time_unix_nano,
             "attributes": _extract_attributes(event.attributes),

@@ -118,7 +118,7 @@ class ChatService:
             config["metadata"] = {
                 "langfuse_session_id": session_id,
                 "langfuse_user_id": user_id or "anonymous",
-                "langfuse_tags": ["sre-chat", "phase-3"],
+                "langfuse_tags": ["sre-chat", "phase-6"],
             }
         return config
 

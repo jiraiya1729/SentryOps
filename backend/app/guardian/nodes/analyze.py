@@ -117,11 +117,11 @@ async def analyze_node(state: GuardianState)-> dict:
       if "```json" in json_str:
         json_str = json_str.split("```json")[-1].split("```")[0]
       elif "```" in json_str:
-        json_str = json_str.split("```")
+        json_str = json_str.split("```")[1]
 
       analysis = json.loads(json_str.strip())
 
-      root_cause = [
+      root_causes = [
         RootCause(
           summary = rc["summary"],
           confidence = rc.get("confidence", 0.5),
@@ -152,7 +152,7 @@ async def analyze_node(state: GuardianState)-> dict:
         "info": Severity.INFO
       }
 
-      severity = severity_map.get(analysis.get("severity", "medium", Severity.MEDIUM))
+      severity = severity_map.get(analysis.get("severity", "medium"), Severity.MEDIUM)
 
       return {
         "status": InvestigationState.ANALYZED,

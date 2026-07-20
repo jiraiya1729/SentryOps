@@ -5,6 +5,7 @@ import { PodMetadata } from "@/components/pod-detail/pod-metadata"
 import { ContainersList } from "@/components/pod-detail/containers-list"
 import { EventsTimeline } from "@/components/pod-detail/events-timeline"
 import { PodMetricsSection } from "@/components/pod-detail/pod-metrics-section"
+import { CorrelationPanel } from "@/components/traces/correlation-panel"
 import { Button } from "@/components/ui/button"
 
 export default async function PodDetailPage({
@@ -37,6 +38,7 @@ export default async function PodDetailPage({
       <ContainersList containers={pod.containers} />
       <EventsTimeline events={eventsData.events} />
       <PodMetricsSection namespace={namespace} name={name} />
+      <CorrelationPanel namespace={namespace} podName={name} />
     </div>
   )
 }

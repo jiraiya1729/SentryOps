@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     LANGFUSE_SECRET_KEY: str = ""
     LANGFUSE_BASE_URL: str = "https://cloud.langfuse.com"
 
+    OTLP_GRPC_PORT: int = 4317
+    PROMETHEUS_SCRAPE_INTERVAL: int = 30
+
     K8S_CONTEXT: str | None = None
 
     CORS_ORIGIN: list[str] = ["http://localhost:3000"]

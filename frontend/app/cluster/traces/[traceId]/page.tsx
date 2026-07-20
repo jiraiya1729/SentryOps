@@ -1,5 +1,6 @@
 import { getTrace } from "@/lib/api/traces"
 import { TraceWaterfall } from "@/components/traces/trace-waterfall"
+import { CorrelationPanel } from "@/components/traces/correlation-panel"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -57,6 +58,8 @@ export default async function TraceDetailPage({ params }: Props) {
       </div>
 
       <TraceWaterfall trace={trace} />
+
+      <CorrelationPanel traceId={traceId} />
     </div>
   )
 }

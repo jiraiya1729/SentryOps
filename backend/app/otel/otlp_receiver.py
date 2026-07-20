@@ -17,13 +17,14 @@ logger = logging.getLogger(__name__)
 class TraceServicer(trace_service_pb2_grpc.TraceServiceServicer):
     def Export(self, request, context):
         try:
-            pass
+            span_count = process_trace_request(request)
+            logger.debug(f"Received {span_count} spans via OTLP")
         except Exception as e:
             logger.error(f"Failed to process trace export: {e}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
 
-            return trace_service_pb2.ExportTraceServiceResponse()
+        return trace_service_pb2.ExportTraceServiceResponse()
 
 
 class MetricServer(metrics_service_pb2_grpc.MetricServiceServicer):
@@ -59,17 +60,18 @@ async def start_otlp_server(port: int = 4317):
 
     trace_service_pb2_grpc.add_TraceServiceServicer_to_server(TraceServicer(), _server)
     metrics_service_pb2_grpc.add_MetricsServiceServicer_to_server(MetricServer(), _server)
-    logs_service_pb2_grpc.add_LogsServiceServicer_to_server(LogsServicer, _server)
+    logs_service_pb2_grpc.add_LogsServiceServicer_to_server(LogsServicer(), _server)
 
     _server.add_insecure_port(f"[::]:{port}")
     await _server.start()
+    logger.info(f"OTLP gRPC server started on port {port}")
 
 
-    async def stop_otlp_server():
-        global _server
-        if _server:
-            await _server.stop(grace=5)
-            _server = None
-            logger.info("OTLP gRPC server stopped")
-            
+async def stop_otlp_server():
+    global _server
+    if _server:
+        await _server.stop(grace=5)
+        _server = None
+        logger.info("OTLP gRPC server stopped")
+
 

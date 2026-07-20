@@ -236,4 +236,39 @@ def _compute_pod_status(pod) -> str:
     return pod.status.phase or "Unknown"
 
 
-ALL_TOOLS = [get_pods, get_pod_detail, search_logs, get_metrics, get_events, get_deployments]
+@tool
+async def search_traces(
+    service: Optional[str] = None,
+    operation: Optional[str] = None,
+    min_duration_ms: Optional[int] = None,
+    status: Optional[str] = None,
+    since: Optional[str] = "1h",
+    limit: Optional[int] = 10,
+) -> str:
+    """Search distributed traces by service, operation, duration, or error status."""
+    from app.services.ai.trace_tools import execute_trace_tool
+    params = {k: v for k, v in {"service": service, "operation": operation, "min_duration_ms": min_duration_ms, "status": status, "since": since, "limit": limit}.items() if v is not None}
+    return await execute_trace_tool("search_traces", params)
+
+
+@tool
+async def get_service_latency(service: str, since: Optional[str] = "1h") -> str:
+    """Get latency statistics (avg, p95, p99) for a service's operations."""
+    from app.services.ai.trace_tools import execute_trace_tool
+    return await execute_trace_tool("get_service_latency", {"service": service, "since": since})
+
+
+@tool
+async def correlate_signals(
+    trace_id: Optional[str] = None,
+    namespace: Optional[str] = None,
+    pod_name: Optional[str] = None,
+    since_minutes: Optional[int] = 15,
+) -> str:
+    """Get correlated signals (traces, logs, events, metrics) for a trace ID or pod."""
+    from app.services.ai.trace_tools import execute_trace_tool
+    params = {k: v for k, v in {"trace_id": trace_id, "namespace": namespace, "pod_name": pod_name, "since_minutes": since_minutes}.items() if v is not None}
+    return await execute_trace_tool("correlate_signals", params)
+
+
+ALL_TOOLS = [get_pods, get_pod_detail, search_logs, get_metrics, get_events, get_deployments, search_traces, get_service_latency, correlate_signals]

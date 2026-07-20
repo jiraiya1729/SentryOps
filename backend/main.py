@@ -21,12 +21,14 @@ from app.api.dashboards import router as dashboards_router
 from app.api.alert_suggestions import router as alerts_suggestions_router
 from app.api.changes import router as changes_router
 from app.api.traces import router as traces_router
+from app.api.correlation import router as correlation_router
 from app.core.config import settings
 from app.workers.log_collector import start_log_collector, stop_log_collector
 from app.workers.metric_collector import start_metrics_collector, stop_metrics_collector
 from app.workers.event_collector import start_event_collector, stop_event_collector
 from app.services.log_ingester import start_log_ingester, stop_log_ingester
 from app.guardian.scheduler import start_guardian, stop_guardian
+from app.otel.otlp_receiver import start_otlp_server, stop_otlp_server
 
 
 @asynccontextmanager
@@ -37,7 +39,9 @@ async def lifespan(app: FastAPI):
     await start_metrics_collector()
     await start_event_collector()
     await start_guardian()
+    await start_otlp_server(settings.OTLP_GRPC_PORT)
     yield
+    await stop_otlp_server()
     await stop_guardian()
     await stop_log_collector()
     await stop_log_ingester()
@@ -72,6 +76,7 @@ app.include_router(dashboards_router, prefix="/api/v1")
 app.include_router(alerts_suggestions_router, prefix="/api/v1")
 app.include_router(changes_router, prefix="/api/v1")
 app.include_router(traces_router, prefix="/api/v1")
+app.include_router(correlation_router, prefix="/api/v1")
 
 
 @app.get("/health")
