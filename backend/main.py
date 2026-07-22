@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -31,9 +32,6 @@ from app.workers.metric_collector import start_metrics_collector, stop_metrics_c
 from app.workers.event_collector import start_event_collector, stop_event_collector
 from app.services.log_ingester import start_log_ingester, stop_log_ingester
 from app.guardian.scheduler import start_guardian, stop_guardian
-from app.otel.otlp_receiver import start_otlp_server, stop_otlp_server
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ingestion_queue = asyncio.Queue()
@@ -42,19 +40,19 @@ async def lifespan(app: FastAPI):
     await start_metrics_collector()
     await start_event_collector()
     await start_guardian()
-    await start_otlp_server(settings.OTLP_GRPC_PORT)
     if settings.DEPLOY_VERIFICATION_ENABLED:
         await deployment_detector.start()
     yield
     if settings.DEPLOY_VERIFICATION_ENABLED:
         await deployment_detector.stop()
-    await stop_otlp_server()
     await stop_guardian()
     await stop_log_collector()
     await stop_log_ingester()
     await stop_metrics_collector()
     await stop_event_collector()
 
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SentryOps", lifespan=lifespan)
 

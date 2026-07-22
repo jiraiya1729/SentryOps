@@ -3,8 +3,6 @@ import time
 from typing import Any, AsyncGenerator
 
 from langchain.agents import create_agent
-
-from langchain.agents.middleware import AgentMiddleware
 from langchain_aws import ChatBedrockConverse
 from langchain_core.callbacks import BaseCallbackHandler
 from langgraph.checkpoint.memory import MemorySaver
@@ -29,19 +27,6 @@ When answering questions:
 You can make multiple tool calls if needed to fully answer a question.
 
 """
-
-class SREObservabilityMiddleware(AgentMiddleware):
-    
-    def before_model(self, state, runtime):
-        msg_count = len(state.get("messages", []))
-        logger.info(f"Agent model call: {msg_count} messages in context.")
-        return None
-
-    def after_model(self, state, runtime):
-        last_msg = state.get("message", [])[-1] if state.get("messages") else None
-        tool_calls = len(getattr(last_msg, "tool_calls", [])) if last_msg else 0
-        logger.info(f"Agent model response: {tool_calls} tool calls")
-        return None
 
 class TelemetryCallbackHandler(BaseCallbackHandler):
 
@@ -83,7 +68,6 @@ class ChatService:
             model = self.model,
             tools = ALL_TOOLS,
             system_prompt = SYSTEM_PROMPT,
-            middleware = [SREObservabilityMiddleware],
             checkpointer = self.checkpointer,
         )
 
@@ -198,5 +182,12 @@ class ChatService:
         return history
 
 
-chat_service = ChatService()
-    
+_chat_service: ChatService | None = None
+
+def get_chat_service() -> ChatService:
+    global _chat_service
+    if _chat_service is None:
+        _chat_service = ChatService()
+    return _chat_service
+
+chat_service = get_chat_service

@@ -10,39 +10,39 @@ const SEVERITY_CONFIG = {
   critical: {
     border: "border-l-red-500",
     icon: AlertCircle,
-    iconClass: "text-red-500",
-    badge: "bg-red-500/20 text-red-400",
+    iconClass: "text-red-600",
+    badge: "bg-red-50 text-red-700 border border-red-200",
   },
   high: {
     border: "border-l-orange-500",
     icon: AlertTriangle,
-    iconClass: "text-orange-500",
-    badge: "bg-orange-500/20 text-orange-400",
+    iconClass: "text-orange-600",
+    badge: "bg-orange-50 text-orange-700 border border-orange-200",
   },
   medium: {
     border: "border-l-amber-500",
     icon: AlertTriangle,
-    iconClass: "text-amber-500",
-    badge: "bg-amber-500/20 text-amber-400",
+    iconClass: "text-amber-600",
+    badge: "bg-amber-50 text-amber-700 border border-amber-200",
   },
   low: {
-    border: "border-l-blue-500",
+    border: "border-l-violet-500",
     icon: Info,
-    iconClass: "text-blue-400",
-    badge: "bg-blue-500/20 text-blue-400",
+    iconClass: "text-violet-500",
+    badge: "bg-violet-50 text-violet-700 border border-violet-200",
   },
   info: {
-    border: "border-l-zinc-500",
+    border: "border-l-stone-400",
     icon: Info,
-    iconClass: "text-zinc-400",
-    badge: "bg-zinc-500/20 text-zinc-400",
+    iconClass: "text-stone-500",
+    badge: "bg-stone-100 text-stone-600 border border-stone-200",
   },
 } as const
 
 const RISK_COLORS: Record<RiskLevel, string> = {
-  low: "text-green-400 bg-green-500/10",
-  medium: "text-amber-400 bg-amber-500/10",
-  high: "text-red-400 bg-red-500/10",
+  low: "text-green-700 bg-green-50",
+  medium: "text-amber-700 bg-amber-50",
+  high: "text-red-700 bg-red-50",
 }
 
 function TimeAgo({ iso }: { iso: string }) {
@@ -85,7 +85,7 @@ export function ApprovalCard({
     <div
       className={cn(
         "rounded-xl border border-border/50 border-l-4 p-4",
-        "bg-card/50 backdrop-blur-md",
+        "bg-card shadow-sm",
         cfg.border
       )}
     >

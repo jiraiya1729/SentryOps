@@ -73,7 +73,7 @@ class AnomalyDetector:
 
             for cs in pod.status.container_statuses or []:
                 if cs.restart_count >= guardian_config.RESTART_COUNT_THRESHOLD:
-                    restart = ""
+                    reason = ""
                     if cs.state.waiting:
                         reason = cs.state.waiting.reason or ""
 
@@ -106,8 +106,7 @@ class AnomalyDetector:
         return anomalies
 
     async def _check_resource_pressure(self) -> list[dict]:
-        
-        client = get_clickhouse_client()
+        import asyncio
 
         sql = """
             SELECT
@@ -123,7 +122,7 @@ class AnomalyDetector:
             LIMIT 50
         """
 
-        result = client.query(sql)
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql))
         anomalies = []
         for row in result.result_rows:
             ns, pod, metric, avg_val, max_val = row
@@ -154,11 +153,12 @@ class AnomalyDetector:
         return anomalies
 
     async def _check_error_spike(self) -> list[dict]:
-        client = get_clickhouse_client()
+        import asyncio
+
         sql = """
             SELECT
                 namespace, pod_name,
-                countIf(level='ERROR') as error_count,
+                countIf(log_level='ERROR') as error_count,
                 count() as total_count
             FROM logs
             WHERE timestamp >= now() - INTERVAL 5 MINUTE
@@ -167,7 +167,8 @@ class AnomalyDetector:
             ORDER BY error_count DESC
             LIMIT 10
         """
-        result = client.query(sql, parameters={"threshold": guardian_config.ERROR_RATE_THRESHOLD})
+        params = {"threshold": guardian_config.ERROR_RATE_THRESHOLD}
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql, parameters=params))
 
         anomalies = []
 
@@ -192,7 +193,8 @@ class AnomalyDetector:
 
 
     async def _check_event_patterns(self) -> list[dict]:
-        client = get_clickhouse_client()
+        import asyncio
+
         sql = """
             SELECT
                 namespace, involved_object_kind, involved_object_name,
@@ -206,7 +208,7 @@ class AnomalyDetector:
                 LIMIT 10
         """
 
-        result = client.query(sql)
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql))
         anomalies = []
 
         for row in result.result_rows:

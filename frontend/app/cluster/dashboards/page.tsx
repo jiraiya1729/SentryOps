@@ -50,7 +50,7 @@ export default function DashboardsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Dashboards</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Dashboards</h1>
           <p className="text-sm text-muted-foreground">Custom observability dashboards</p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS deployments
+CREATE TABLE IF NOT EXISTS sentryops.deployments
 (
     timestamp DateTime64(3) CODEC(Delta, ZSTD),
     deployment_id String DEFAULT generateUUIDv4(),
@@ -53,13 +53,12 @@ CREATE TABLE IF NOT EXISTS deployments
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (namespace, deployment_name, timestamp)
-TTL timestamp + INTERVAL 90 DAY
+TTL toDateTime(timestamp) + INTERVAL 90 DAY
 SETTINGS index_granularity = 8192;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS deployments_recent_mv
+CREATE MATERIALIZED VIEW IF NOT EXISTS sentryops.deployments_recent_mv
 ENGINE = AggregatingMergeTree()
-PARTITION BY toYYYYMM(timestamp)
-ORDER BY (namespace, deployment_name, timestamp)
+ORDER BY (namespace, deployment_name)
 AS SELECT
     namespace,
     deployment_name,
@@ -67,10 +66,10 @@ AS SELECT
     argMaxState(git_sha, timestamp) as latest_sha,
     argMaxState(commit_author, timestamp) as latest_author,
     argMaxState(verification_status, timestamp) as latest_status
-FROM deployments
+FROM sentryops.deployments
 GROUP BY namespace, deployment_name;
 
-CREATE TABLE IF NOT EXISTS deployment_verifications
+CREATE TABLE IF NOT EXISTS sentryops.deployment_verifications
 (
     timestamp DateTime64(3) CODEC(Delta, ZSTD),
     deployment_id String,
@@ -85,10 +84,10 @@ CREATE TABLE IF NOT EXISTS deployment_verifications
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (deployment_id, timestamp, check_name)
-TTL timestamp + INTERVAL 30 DAY
+TTL toDateTime(timestamp) + INTERVAL 30 DAY
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE IF NOT EXISTS deployment_impact
+CREATE TABLE IF NOT EXISTS sentryops.deployment_impact
 (
     deployment_id String,
     metric_name LowCardinality(String),

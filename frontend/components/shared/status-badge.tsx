@@ -37,10 +37,10 @@ function getVariant(status: string): StatusVariant {
 }
 
 const variantStyles: Record<StatusVariant, string> = {
-  success: "bg-success/10 text-success border-success/20",
-  warning: "bg-warning/10 text-warning border-warning/20",
-  danger: "bg-destructive/10 text-destructive border-destructive/20",
-  orange: "bg-orange/10 text-orange border-orange/20",
+  success: "bg-success/10 text-success border-success/25",
+  warning: "bg-warning/10 text-warning border-warning/25",
+  danger: "bg-destructive/10 text-destructive border-destructive/25",
+  orange: "bg-orange/10 text-orange border-orange/25",
   default: "bg-muted text-muted-foreground border-border",
 }
 

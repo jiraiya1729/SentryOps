@@ -2,8 +2,9 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
-from app.db.k8s_client import core_v1
+from app.core.k8s_client import core_v1
 from app.db.clickhouse.client import get_clickhouse_client
+import asyncio
 from app.guardian.state import GuardianState, InvestigationState, Severity
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ async def triage_alert_node(state: GuardianState)-> dict:
             "nodes_visited": state.nodes_visited + ["triage"],
         }
     return {
-        "status": InvestigationStatus.GATHERING,
+        "status": InvestigationState.GATHERING,
         "nodes_visited": state.nodes_visited + ["triage"],
     }
 
@@ -86,8 +87,7 @@ async def _check_issue_ongoing(state: GuardianState) -> bool:
     return True
 
 async def _check_metrics_still_high(state: GuardianState) -> bool:
-    client = get_clickhouse_client()
-    since = datetime.now(timezone.utc) - timedelta(minutes = 2)
+    since = datetime.now(timezone.utc) - timedelta(minutes=2)
 
     sql = """
         SELECT max(metric_value)
@@ -98,12 +98,14 @@ async def _check_metrics_still_high(state: GuardianState) -> bool:
         LIMIT 1
     """
 
+    params = {
+        "since": since,
+        "ns": state.namespace or "",
+        "pod": f"%{state.resource_name or ''}%",
+    }
+
     try:
-        result = client.query(sql, parameters={
-            "since": since, 
-            "ns": state.namespace or "",
-            "pod": f"%{state.resource_name or ''}%",
-        })
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql, parameters=params))
         if result.result_rows and result.result_rows[0][0]:
             return result.result_rows[0][0] > 0.7
     except Exception:
@@ -127,27 +129,25 @@ async def _check_pod_still_unhealthy(state: GuardianState) -> bool:
         return True
 
 async def _check_errors_still_high(state: GuardianState) -> bool:
-    client = get_clickhouse_client()
     since = datetime.now(timezone.utc) - timedelta(minutes=20)
 
     sql = """
         SELECT
-            countIf(level = 'ERROR') as Errors,
-            count() as total,
+            countIf(log_level = 'ERROR') as error_count,
+            count() as total
         FROM logs
         WHERE timestamp >= {since:DateTime64(3)}
         AND namespace = {ns:String}
     """
 
+    params = {"since": since, "ns": state.namespace or ""}
+
     try:
-        result = client.query(sql, parameters={
-            "since": since,
-            "ns": state.namespace or "",
-        })
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql, parameters=params))
         if result.result_rows:
-            error, total = result.result_rows[0]
+            error_count, total = result.result_rows[0]
             if total > 0:
-                return (errors / total) > 0.05
+                return (error_count / total) > 0.05
     except Exception:
         pass
     

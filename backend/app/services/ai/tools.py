@@ -11,7 +11,7 @@ from app.db.clickhouse.client import query_logs, get_clickhouse_client
 
 @tool
 def get_pods(namespace: Optional[str] = None, status_filter: Optional[str] = None) -> str:
-
+    """List pods in the cluster, optionally filtered by namespace or status."""
     if namespace:
         pods = core_v1.list_namespaced_pod(namespace)
     else:
@@ -39,6 +39,7 @@ def get_pods(namespace: Optional[str] = None, status_filter: Optional[str] = Non
 
 @tool
 def get_pod_detail(namespace: str, pod_name: str) -> str:
+    """Get detailed status, container states, and recent events for a specific pod."""
     pod = core_v1.read_namespaced_pod(pod_name, namespace)
 
     containers = []
@@ -91,6 +92,7 @@ def get_pod_detail(namespace: str, pod_name: str) -> str:
 
 @tool
 def search_logs(query: str, namespace: Optional[str] = None, pod: Optional[str] = None, level: Optional[str] = None, since: str = "1h", limit: int = 20):
+    """Search pod logs by keyword, namespace, pod name, log level, or time range."""
     limit = min(limit, 50)
     now = datetime.now(timezone.utc)
     units = {"m": "minutes", "h": "hours", "d": "days"}
@@ -114,7 +116,7 @@ def search_logs(query: str, namespace: Optional[str] = None, pod: Optional[str] 
 
 @tool
 def get_metrics(metrics: str, namespace: Optional[str] = None, pod: Optional[str] = None, since: str = "1h"):
-
+    """Get CPU or memory metrics for pods. Use metrics='cpu' or metrics='memory'."""
     client = get_clickhouse_client()
     metric_name = "cpu_usage_cores" if metrics == "cpu" else "memory_usage_bytes"
 
@@ -157,6 +159,7 @@ def get_metrics(metrics: str, namespace: Optional[str] = None, pod: Optional[str
 
 @tool
 def get_events(namespace: Optional[str] = None, event_type: Optional[str] = None, resource_name: Optional[str] = None, since: str = "1h") -> str:
+    """Get Kubernetes events, optionally filtered by namespace, type (Warning/Normal), or resource name."""
     if namespace:
         events_resp = core_v1.list_namespaced_event(namespace)
     else:
@@ -185,7 +188,7 @@ def get_events(namespace: Optional[str] = None, event_type: Optional[str] = None
 
 @tool
 def get_deployments(namespace: Optional[str] = None) -> str:
-
+    """List Kubernetes deployments and their replica/health status."""
     if namespace:
         deps = apps_v1.list_namespaced_deployment(namespace)
     else:

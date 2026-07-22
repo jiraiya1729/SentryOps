@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -9,32 +8,21 @@ interface SummaryCardProps {
   variant?: "default" | "success" | "warning" | "danger"
 }
 
-const variantStyles = {
-  default: "text-primary",
-  success: "text-success",
-  warning: "text-warning",
-  danger: "text-destructive",
+const variantBorder = {
+  default: "border-l-primary",
+  success: "border-l-success",
+  warning: "border-l-warning",
+  danger: "border-l-destructive",
 }
 
 export function SummaryCard({ label, value, icon: Icon, variant = "default" }: SummaryCardProps) {
   return (
-    <Card className="bg-card border-border">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold tracking-tight">{value}</p>
-          </div>
-          <div
-            className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-lg bg-muted",
-              variantStyles[variant]
-            )}
-          >
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className={cn("bg-card rounded-lg shadow-sm p-4 border-l-3", variantBorder[variant])}>
+      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+        <Icon className="h-3.5 w-3.5" />
+        <p className="text-xs font-medium">{label}</p>
+      </div>
+      <p className="text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+    </div>
   )
 }

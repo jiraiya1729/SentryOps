@@ -13,7 +13,7 @@ export function Header({ databaseConnected = false }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 flex items-center h-14 border-b border-border bg-background/80 backdrop-blur-sm px-4 md:px-6">
+    <header className="sticky top-0 z-40 flex items-center h-14 border-b border-border bg-background px-4 md:px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -35,11 +35,11 @@ export function Header({ databaseConnected = false }: HeaderProps) {
       <div className="flex items-center gap-2">
         <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-success" />
             <span>K8s</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${databaseConnected ? "bg-success animate-pulse" : "bg-muted-foreground"}`} />
+            <div className={`w-2 h-2 rounded-full ${databaseConnected ? "bg-success" : "bg-muted-foreground"}`} />
             <span>DB</span>
           </div>
         </div>

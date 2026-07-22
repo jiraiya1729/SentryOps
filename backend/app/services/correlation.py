@@ -103,7 +103,7 @@ class CorrelationService:
 
         where = " AND ".join(conditions)
         sql = f"""
-            SELECT timestamp, namespace, pod_name, level, message
+            SELECT timestamp, namespace, pod_name, log_level, message
             FROM logs
             WHERE {where}
             ORDER BY timestamp DESC
@@ -202,4 +202,5 @@ class CorrelationService:
                 for row in result.result_rows
                 ]
 
-    correlation_service = CorrelationService()
+
+correlation_service = CorrelationService()

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from app.db.clickhouse.client import get_clickhouse_client
 
@@ -147,3 +147,114 @@ async def event_stats(
     }
 
     return {"stats": stats, "summary": summary}
+
+
+@router.get("/correlated")
+async def correlated_events(
+    namespace: str | None = Query(None),
+    since_minutes: int = Query(15),
+):
+    """Group related events by involved object."""
+    client = get_clickhouse_client()
+    since_dt = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
+
+    conditions = ["timestamp >= {since:DateTime64(3)}"]
+    params: dict = {"since": since_dt}
+    if namespace:
+        conditions.append("namespace = {ns:String}")
+        params["ns"] = namespace
+
+    where = " AND ".join(conditions)
+
+    sql = f"""
+        SELECT
+            involved_object_kind,
+            involved_object_name,
+            namespace,
+            groupArray(reason) AS reasons,
+            groupArray(message) AS messages,
+            count() AS event_count,
+            min(timestamp) AS first_seen,
+            max(timestamp) AS last_seen
+        FROM k8s_events
+        WHERE {where}
+        GROUP BY involved_object_kind, involved_object_name, namespace
+        ORDER BY event_count DESC
+        LIMIT 50
+    """
+
+    result = client.query(sql, parameters=params)
+
+    groups = [
+        {
+            "kind": row[0],
+            "name": row[1],
+            "namespace": row[2],
+            "reasons": list(set(row[3]))[:10],
+            "messages": row[4][:5],
+            "event_count": row[5],
+            "first_seen": row[6].isoformat() if hasattr(row[6], "isoformat") else str(row[6]),
+            "last_seen": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
+        }
+        for row in result.result_rows
+    ]
+
+    return {"groups": groups, "total": len(groups)}
+
+
+@router.get("/stream")
+async def stream_events(
+    request: Request,
+    namespace: str | None = Query(None),
+    event_type: str | None = Query(None),
+    since: str = Query("1h"),
+):
+    """SSE endpoint for real-time events."""
+    from starlette.responses import StreamingResponse
+    import asyncio
+    import json
+
+    client = get_clickhouse_client()
+
+    async def event_generator():
+        since_dt = _parse_time(since)
+        conditions = ["timestamp >= {since:DateTime64(3)}"]
+        params: dict = {"since": since_dt}
+        if namespace:
+            conditions.append("namespace = {ns:String}")
+            params["ns"] = namespace
+        if event_type:
+            conditions.append("type = {type:String}")
+            params["type"] = event_type
+
+        where = " AND ".join(conditions)
+        sql = f"""
+            SELECT timestamp, namespace, name, type, reason, message,
+                   involved_object_kind, involved_object_name, source_component, count
+            FROM k8s_events
+            WHERE {where}
+            ORDER BY timestamp DESC
+            LIMIT 20
+        """
+        result = client.query(sql, parameters=params)
+        for row in result.result_rows:
+            if await request.is_disconnected():
+                return
+            event = {
+                "timestamp": row[0].isoformat() if hasattr(row[0], "isoformat") else str(row[0]),
+                "namespace": row[1],
+                "name": row[2],
+                "type": row[3],
+                "reason": row[4],
+                "message": row[5],
+                "involved_object_kind": row[6],
+                "involved_object_name": row[7],
+                "source_component": row[8],
+                "count": row[9],
+            }
+            yield f"data: {json.dumps(event)}\n\n"
+        while not await request.is_disconnected():
+            await asyncio.sleep(10)
+            yield ": keepalive\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

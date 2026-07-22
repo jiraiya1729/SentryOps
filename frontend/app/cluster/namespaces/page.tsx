@@ -7,7 +7,7 @@ export default async function NamespacesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Namespaces</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Namespaces</h1>
         <p className="text-sm text-muted-foreground">
           Cluster namespaces and pod distribution
         </p>

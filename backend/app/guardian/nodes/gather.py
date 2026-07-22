@@ -39,7 +39,6 @@ async def gather_evidence_node(state: GuardianState) -> dict:
 
 async def _gather_metrics(state: GuardianState) -> Evidence | None:
 
-    client = get_clickhouse_client()
     since = datetime.now(timezone.utc) - timedelta(minutes=30)
     conditions = ["timestamp >= {since:DateTime64(3)}"]
     params: dict = {"since": since}
@@ -68,7 +67,8 @@ async def _gather_metrics(state: GuardianState) -> Evidence | None:
     """
 
     try:
-        result = client.query(sql, parameters=params)
+        _params = params
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql, parameters=_params))
         if not result.result_rows:
             return None
 
@@ -107,12 +107,11 @@ async def _gather_metrics(state: GuardianState) -> Evidence | None:
 
 
 async def _gather_logs(state: GuardianState) -> Evidence | None:
-    client = get_clickhouse_client()
     since = datetime.now(timezone.utc) - timedelta(minutes=15)
 
     conditions = [
         "timestamp >= {since:DateTime64(3)}",
-        "level IN ('ERROR', 'WARN', 'FATAL')",
+        "log_level IN ('ERROR', 'WARN', 'FATAL')",
     ]
 
     params: dict = {"since": since}
@@ -128,7 +127,7 @@ async def _gather_logs(state: GuardianState) -> Evidence | None:
     where = " AND ".join(conditions)
 
     sql = f"""
-        SELECT timestamp, namespace, pod_name, level, message
+        SELECT timestamp, namespace, pod_name, log_level, message
         FROM logs
         WHERE {where}
         ORDER BY timestamp DESC
@@ -136,7 +135,8 @@ async def _gather_logs(state: GuardianState) -> Evidence | None:
     """
 
     try:
-        result = client.query(sql, parameters=params)
+        _params = params
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql, parameters=_params))
         if not result.result_rows:
             return None
 
@@ -166,7 +166,6 @@ async def _gather_logs(state: GuardianState) -> Evidence | None:
 
 
 async def _gather_events(state: GuardianState) -> Evidence | None:
-    client = get_clickhouse_client()
     since = datetime.now(timezone.utc) - timedelta(minutes=30)
 
     conditions = ["timestamp >= {since:DateTime64(3)}"]
@@ -175,7 +174,7 @@ async def _gather_events(state: GuardianState) -> Evidence | None:
     if state.namespace:
         conditions.append("namespace = {ns:String}")
         params["ns"] = state.namespace
-    
+
     if state.resource_name:
         conditions.append("involved_object_name = {name:String}")
         params["name"] = state.resource_name
@@ -193,7 +192,8 @@ async def _gather_events(state: GuardianState) -> Evidence | None:
     """
 
     try:
-        result = client.query(sql, parameters=params)
+        _params = params
+        result = await asyncio.to_thread(lambda: get_clickhouse_client().query(sql, parameters=_params))
         if not result.result_rows:
             return None
 

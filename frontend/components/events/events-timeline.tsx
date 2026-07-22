@@ -53,7 +53,7 @@ function StatsBar({ stats }: { stats: EventStatsResponse }) {
       </div>
       <div className="text-border">|</div>
       <div className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-zinc-500" />
+        <span className="h-2 w-2 rounded-full bg-stone-400" />
         <span className="font-medium">{normalCount.toLocaleString()}</span>
         <span className="text-muted-foreground">Normal</span>
       </div>
@@ -84,8 +84,8 @@ function EventRow({ event, isNew, onResourceClick }: EventRowProps) {
       className={cn(
         "border-l-2 rounded-r-md px-4 py-3 cursor-pointer transition-colors",
         isWarning
-          ? "border-l-orange-500 bg-orange-500/5 hover:bg-orange-500/10"
-          : "border-l-zinc-700 hover:bg-muted/30",
+          ? "border-l-orange-500 bg-orange-50 hover:bg-orange-100"
+          : "border-l-stone-300 hover:bg-muted/30",
         isNew && "animate-in fade-in duration-500"
       )}
       onClick={() => setExpanded((v) => !v)}
@@ -94,7 +94,7 @@ function EventRow({ event, isNew, onResourceClick }: EventRowProps) {
         <span
           className={cn(
             "mt-1 shrink-0 h-2 w-2 rounded-full",
-            isWarning ? "bg-orange-500" : "bg-zinc-500"
+            isWarning ? "bg-orange-500" : "bg-stone-400"
           )}
         />
 
@@ -107,7 +107,7 @@ function EventRow({ event, isNew, onResourceClick }: EventRowProps) {
             <span
               className={cn(
                 "text-xs font-semibold",
-                isWarning ? "text-orange-400" : "text-muted-foreground"
+                isWarning ? "text-orange-700" : "text-muted-foreground"
               )}
             >
               {event.reason}
@@ -144,8 +144,8 @@ function EventRow({ event, isNew, onResourceClick }: EventRowProps) {
                 className={cn(
                   "ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
                   isWarning
-                    ? "bg-orange-500/20 text-orange-400"
-                    : "bg-zinc-700 text-zinc-400"
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-stone-100 text-stone-600"
                 )}
               >
                 ×{event.count}
@@ -207,7 +207,7 @@ export function EventsTimeline() {
       ])
       setEvents(eventsRes.events)
       setStats(statsRes)
-      setPatterns(correlatedRes.patterns)
+      setPatterns(correlatedRes?.patterns ?? [])
       setLastUpdated(new Date())
       clearNewEvents()
     } catch {

@@ -9,28 +9,28 @@ import type { AlertSuggestion } from "@/lib/types/api"
 const SEVERITY_CONFIG = {
   critical: {
     icon: AlertCircle,
-    iconClass: "text-red-500",
-    badge: "bg-red-500/20 text-red-400",
+    iconClass: "text-red-600",
+    badge: "bg-red-50 text-red-700 border border-red-200",
   },
   high: {
     icon: AlertTriangle,
-    iconClass: "text-orange-500",
-    badge: "bg-orange-500/20 text-orange-400",
+    iconClass: "text-orange-600",
+    badge: "bg-orange-50 text-orange-700 border border-orange-200",
   },
   medium: {
     icon: AlertTriangle,
-    iconClass: "text-amber-500",
-    badge: "bg-amber-500/20 text-amber-400",
+    iconClass: "text-amber-600",
+    badge: "bg-amber-50 text-amber-700 border border-amber-200",
   },
   low: {
     icon: Info,
-    iconClass: "text-blue-400",
-    badge: "bg-blue-500/20 text-blue-400",
+    iconClass: "text-violet-500",
+    badge: "bg-violet-50 text-violet-700 border border-violet-200",
   },
   info: {
     icon: Info,
-    iconClass: "text-zinc-400",
-    badge: "bg-zinc-500/20 text-zinc-400",
+    iconClass: "text-stone-500",
+    badge: "bg-stone-100 text-stone-600 border border-stone-200",
   },
 } as const
 
@@ -81,7 +81,7 @@ export function SuggestionCard({
     <div
       className={cn(
         "rounded-xl border border-border/50 border-l-4 border-l-violet-500 p-4",
-        "bg-card/50 backdrop-blur-md"
+        "bg-card shadow-sm"
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -89,7 +89,7 @@ export function SuggestionCard({
           <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", cfg.iconClass)} />
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase bg-violet-500/20 text-violet-400">
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase bg-violet-50 text-violet-700 border border-violet-200">
                 <Sparkles className="h-2.5 w-2.5" />
                 AI Suggested
               </span>

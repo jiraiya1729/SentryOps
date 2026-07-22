@@ -28,7 +28,7 @@ class DashboardUpdate(BaseModel):
 
 class PanelQueryRequest(BaseModel):
     panel_type: str
-    query_config: str
+    query_config: str | dict
     time_range: str = "1h"
 
 
@@ -138,9 +138,15 @@ async def remove_panel(dashboard_id: str, panel_id: str):
 
 @router.post("/panels/query")
 async def execute_panel_query(request: PanelQueryRequest):
+    import json as _json
     client = get_clickhouse_client()
     time_range = request.time_range
     config = request.query_config
+    if isinstance(config, str):
+        try:
+            config = _json.loads(config)
+        except (ValueError, TypeError):
+            config = {}
     units = {"m": "minutes", "h": "hours", "d": "days"}
     since = datetime.now(timezone.utc) - timedelta(hours=1)
     if time_range and time_range[-1] in units:

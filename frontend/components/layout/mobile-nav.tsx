@@ -45,7 +45,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary">
               <span className="text-xs font-bold text-white">S</span>
             </div>
-            <span className="text-sm font-semibold text-white">SentryOps</span>
+            <span className="text-sm font-semibold text-foreground">SentryOps</span>
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col gap-1 p-3">

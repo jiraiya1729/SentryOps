@@ -31,7 +31,7 @@ export default function TracesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Traces</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Traces</h1>
         <p className="text-sm text-muted-foreground">
           Search and explore distributed traces
         </p>

@@ -18,18 +18,18 @@ const HOURS_OPTIONS = [
 ]
 
 const SEVERITY_COLOR: Record<string, string> = {
-  critical: "#ef4444",
-  high: "#f97316",
-  medium: "#eab308",
-  low: "#3b82f6",
-  info: "#6b7280",
+  critical: "#dc2626",
+  high: "#ea580c",
+  medium: "#ca8a04",
+  low: "#7c3aed",
+  info: "#78716c",
 }
 
 const HEALTH_DOT_COLOR = (score: number, status: string) => {
-  if (status === "failed") return "#ef4444"
-  if (status === "degraded") return "#eab308"
-  if (status === "healthy") return "#22c55e"
-  return "#6b7280"
+  if (status === "failed") return "#dc2626"
+  if (status === "degraded") return "#ca8a04"
+  if (status === "healthy") return "#16a34a"
+  return "#78716c"
 }
 
 function DeployMarker({ d, onClick }: { d: TimelineDeployment; onClick: () => void }) {
@@ -52,7 +52,7 @@ function DeployMarker({ d, onClick }: { d: TimelineDeployment; onClick: () => vo
 }
 
 function IncidentMarker({ inc, onClick }: { inc: TimelineIncident; onClick: () => void }) {
-  const color = SEVERITY_COLOR[inc.severity] ?? "#6b7280"
+  const color = SEVERITY_COLOR[inc.severity] ?? "#78716c"
   return (
     <button
       onClick={onClick}
@@ -99,7 +99,7 @@ export default function TimelinePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Deployment Timeline</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Deployment Timeline</h1>
         <p className="text-sm text-muted-foreground">
           Visualize deployments, incidents, and metric trends together
         </p>
@@ -224,7 +224,7 @@ export default function TimelinePage() {
                   <Line
                     type="monotone"
                     dataKey="value"
-                    stroke="#6b7280"
+                    stroke="#78716c"
                     strokeWidth={1.5}
                     dot={false}
                     activeDot={{ r: 3 }}

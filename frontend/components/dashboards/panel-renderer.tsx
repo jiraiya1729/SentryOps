@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/table"
 import { executePanelQuery } from "@/lib/api/dashboards"
 import type { DashboardPanel, PanelQueryResponse } from "@/lib/types/api"
-
-const LINE_COLORS = ["#3b82f6", "#22c55e", "#8b5cf6", "#f97316", "#eab308"]
+import { CHART_COLORS, CHART_GRID_COLOR, CHART_AXIS_COLOR, CHART_TOOLTIP_STYLE } from "@/lib/chart-colors"
 
 interface PanelRendererProps {
   panel: DashboardPanel
@@ -142,27 +141,27 @@ function PanelContent({ panel, data }: { panel: DashboardPanel; data: PanelQuery
     return (
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#3c4753" opacity={0.4} />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} opacity={0.6} />
           <XAxis
             dataKey="time"
-            stroke="#6b7280"
+            stroke={CHART_AXIS_COLOR}
             fontSize={10}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: string) => new Date(v).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             interval="preserveStartEnd"
           />
-          <YAxis stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} width={40} />
+          <YAxis stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} axisLine={false} width={40} />
           <Tooltip
-            contentStyle={{ background: "#1e2530", border: "1px solid #3c4753", fontSize: 11 }}
-            labelStyle={{ color: "#9ca3af" }}
+            contentStyle={CHART_TOOLTIP_STYLE}
+            labelStyle={{ color: "#78716c" }}
           />
           {keys.map((key, i) => (
             <Line
               key={key}
               type="monotone"
               dataKey={key}
-              stroke={LINE_COLORS[i % LINE_COLORS.length]}
+              stroke={CHART_COLORS[i % CHART_COLORS.length]}
               strokeWidth={1.5}
               dot={false}
               activeDot={{ r: 3 }}

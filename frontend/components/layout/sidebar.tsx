@@ -45,19 +45,8 @@ const INTELLIGENCE = [
   { href: "/cluster/dashboards", label: "Dashboards", icon: LayoutDashboard },
 ]
 
-function SectionLabel({
-  label,
-  collapsed,
-}: {
-  label: string
-  collapsed: boolean
-}) {
-  if (collapsed) return <div className="my-1 border-t border-sidebar-border/40" />
-  return (
-    <p className="mt-3 mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-      {label}
-    </p>
-  )
+function SectionDivider({ collapsed }: { collapsed: boolean }) {
+  return <div className={cn("my-2 border-t border-sidebar-border", collapsed ? "mx-2" : "mx-3")} />
 }
 
 export function Sidebar() {
@@ -82,22 +71,21 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 flex flex-col p-3 overflow-y-auto">
-        <SectionLabel label="Overview" collapsed={collapsed} />
         {OVERVIEW.map((item) => (
           <NavItem key={item.href} {...item} collapsed={collapsed} />
         ))}
 
-        <SectionLabel label="Resources" collapsed={collapsed} />
+        <SectionDivider collapsed={collapsed} />
         {RESOURCES.map((item) => (
           <NavItem key={item.href} {...item} collapsed={collapsed} />
         ))}
 
-        <SectionLabel label="Observability" collapsed={collapsed} />
+        <SectionDivider collapsed={collapsed} />
         {OBSERVABILITY.map((item) => (
           <NavItem key={item.href} {...item} collapsed={collapsed} />
         ))}
 
-        <SectionLabel label="Intelligence" collapsed={collapsed} />
+        <SectionDivider collapsed={collapsed} />
         <GuardianNavItem collapsed={collapsed} />
         {INTELLIGENCE.map((item) => (
           <NavItem key={item.href} {...item} collapsed={collapsed} />
@@ -107,7 +95,7 @@ export function Sidebar() {
       <div className="p-3 border-t border-sidebar-border">
         <button
           onClick={toggle}
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-white hover:bg-sidebar-accent w-full transition-colors"
+          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-sidebar-accent w-full transition-colors"
         >
           {collapsed ? (
             <PanelLeftOpen className="h-4 w-4 shrink-0" />

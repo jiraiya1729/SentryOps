@@ -4,7 +4,7 @@ class GuardianConfig(BaseSettings):
 
 
     
-    GUARDIAN_MODEL: str = "claude-sonnet-4-6-20250514"
+    GUARDIAN_MODEL: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     GUARDIAN_MAX_TOKENS: int = 4096
 
     

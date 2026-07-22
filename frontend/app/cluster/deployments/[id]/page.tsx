@@ -7,11 +7,11 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
 const STATUS_COLOR: Record<VerificationStatus, string> = {
-  healthy: "bg-green-500/10 text-green-500 border-green-500/20",
-  degraded: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-  failed: "bg-red-500/10 text-red-500 border-red-500/20",
-  rolled_back: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  pending: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+  healthy: "bg-green-50 text-green-700 border-green-200",
+  degraded: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  failed: "bg-red-50 text-red-700 border-red-200",
+  rolled_back: "bg-orange-50 text-orange-700 border-orange-200",
+  pending: "bg-stone-50 text-stone-600 border-stone-200",
 }
 
 const HEALTH_COLOR = (score: number) =>
@@ -105,7 +105,7 @@ export default async function DeploymentDetailPage({
                     href={d.pr_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-blue-400 hover:underline"
+                    className="flex items-center gap-1 text-sm text-primary hover:underline"
                   >
                     #{d.pr_number} {d.pr_title?.slice(0, 40)}
                     <ExternalLink className="h-3 w-3" />
@@ -127,7 +127,7 @@ export default async function DeploymentDetailPage({
                 <div key={i} className="flex items-center gap-2 text-xs font-mono">
                   <span className="text-muted-foreground truncate max-w-[200px]">{d.old_images[i] || "—"}</span>
                   <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <span className="text-green-400 truncate max-w-[200px]">{img}</span>
+                  <span className="text-green-700 truncate max-w-[200px]">{img}</span>
                 </div>
               ))}
             </div>
@@ -188,7 +188,7 @@ export default async function DeploymentDetailPage({
               <tbody>
                 {impact.map((m, i) => {
                   const change = m.percent_change
-                  const changeColor = change > 0 ? "text-red-400" : change < 0 ? "text-green-400" : "text-muted-foreground"
+                  const changeColor = change > 0 ? "text-red-600" : change < 0 ? "text-green-700" : "text-muted-foreground"
                   return (
                     <tr key={i} className="border-t border-border">
                       <td className="px-4 py-2.5 font-medium">{m.metric}</td>
@@ -211,8 +211,8 @@ export default async function DeploymentDetailPage({
       {d.files_changed.length > 0 && (
         <Section title={`Files Changed (${d.files_changed.length})`}>
           <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-            <span className="text-green-400">+{d.additions} additions</span>
-            <span className="text-red-400">-{d.deletions} deletions</span>
+            <span className="text-green-700">+{d.additions} additions</span>
+            <span className="text-red-600">-{d.deletions} deletions</span>
           </div>
           <ul className="space-y-1">
             {d.files_changed.map((f, i) => (
@@ -232,7 +232,7 @@ export default async function DeploymentDetailPage({
               <li key={id}>
                 <Link
                   href={`/cluster/guardian?investigation=${id}`}
-                  className="flex items-center gap-2 text-sm text-blue-400 hover:underline"
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
                 >
                   <AlertTriangle className="h-3.5 w-3.5" />
                   Investigation {id.slice(0, 8)}

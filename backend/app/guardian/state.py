@@ -8,6 +8,7 @@ class InvestigationState(str, Enum):
     PENDING = "pending"
     GATHERING = "gathering"
     ANALYZING = "analyzing"
+    ANALYZED = "analyzed"
     AWAITING_APPROVAL = "awaiting_approval"
     EXECUTING = "executing"
     COMPLETED = "completed"

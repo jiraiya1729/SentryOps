@@ -40,22 +40,43 @@ class DeploymentDetector:
 
     async def _watch_deployments(self):
         w = watch.Watch()
+        loop = asyncio.get_running_loop()
 
         while self.running:
             try:
                 logger.info("Starting deployment watch stream")
 
-                for event in w.stream(
-                    apps_v1.list_deployment_for_all_namespaces,
-                    timeout_seconds=300,
-                ):
-                    if not self.running:
-                        break
-                    event_type = event["type"]
-                    deployment = event["object"]
+                queue: asyncio.Queue = asyncio.Queue(maxsize=200)
 
+                def _blocking_watch():
+                    try:
+                        for event in w.stream(
+                            apps_v1.list_deployment_for_all_namespaces,
+                            timeout_seconds=300,
+                        ):
+                            loop.call_soon_threadsafe(queue.put_nowait, ("event", event))
+                            if not self.running:
+                                w.stop()
+                                break
+                    except Exception as exc:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("error", exc))
+                    finally:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
+
+                watch_future = loop.run_in_executor(None, _blocking_watch)
+
+                while True:
+                    kind, data = await queue.get()
+                    if kind == "done":
+                        break
+                    if kind == "error":
+                        raise data
+                    event_type = data["type"]
+                    deployment = data["object"]
                     if event_type == "MODIFIED":
                         await self._handle_deployment_change(deployment)
+
+                await watch_future
 
             except ApiException as e:
                 if e.status == 410:
@@ -107,23 +128,22 @@ class DeploymentDetector:
         primary_sha = git_shas[0] if git_shas else ""
 
         try:
-            ch = get_clickhouse_client()
-            ch.insert(
-                "deployments",
-                [[
-                    datetime.utcnow(),
-                    namespace,
-                    name,
-                    old_images,
-                    images,
-                    primary_sha,
-                    replicas,
-                    deployment.metadata.labels or {},
-                ]],
-                column_names=[
-                    "timestamp", "namespace", "deployment_name",
-                    "old_images", "new_images", "git_sha", "replicas", "labels",
-                ],
+            row = [
+                datetime.utcnow(),
+                namespace,
+                name,
+                old_images,
+                images,
+                primary_sha,
+                replicas,
+                deployment.metadata.labels or {},
+            ]
+            col_names = [
+                "timestamp", "namespace", "deployment_name",
+                "old_images", "new_images", "git_sha", "replicas", "labels",
+            ]
+            await asyncio.to_thread(
+                lambda: get_clickhouse_client().insert("deployments", [row], column_names=col_names)
             )
 
             logger.info(f"Recorded deployment: {namespace}/{name} (SHA: {primary_sha or 'unknown'})")

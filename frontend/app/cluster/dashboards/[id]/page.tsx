@@ -93,7 +93,7 @@ export default function DashboardDetailPage({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">{dashboard.name}</h1>
+          <h1 className="text-lg font-semibold tracking-tight">{dashboard.name}</h1>
           {dashboard.description && (
             <p className="text-sm text-muted-foreground">{dashboard.description}</p>
           )}

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "us-east-1"
-    BEDROCK_MODEL_ID: str = "us.anthropic.claude-sonnet-4-6-20250514-v1:0"
+    BEDROCK_MODEL_ID: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
     # Langfuse (optional)
     LANGFUSE_PUBLIC_KEY: str = ""

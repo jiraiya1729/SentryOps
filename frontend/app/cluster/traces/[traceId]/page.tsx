@@ -27,7 +27,7 @@ export default async function TraceDetailPage({ params }: Props) {
 
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-lg font-semibold">Trace Detail</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Trace Detail</h1>
         </div>
         <p className="mt-1 font-mono text-xs text-muted-foreground">{traceId}</p>
       </div>

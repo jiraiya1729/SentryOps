@@ -23,9 +23,11 @@ export function GuardianNavItem({ collapsed }: GuardianNavItemProps) {
       href="/cluster/guardian"
       onClick={clearNew}
       className={cn(
-        "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "relative flex items-center gap-3 rounded-r-md px-3 py-2 text-sm font-medium transition-colors",
         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive ? "bg-sidebar-accent text-white" : "text-muted-foreground"
+        isActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-3 border-primary"
+          : "text-muted-foreground border-l-3 border-transparent"
       )}
     >
       <Shield className="h-4 w-4 shrink-0" />

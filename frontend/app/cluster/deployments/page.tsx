@@ -9,11 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const STATUS_CONFIG: Record<VerificationStatus, { label: string; icon: React.ReactNode; className: string }> = {
-  healthy: { label: "Healthy", icon: <CheckCircle className="h-3 w-3" />, className: "bg-green-500/10 text-green-500 border-green-500/20" },
-  degraded: { label: "Degraded", icon: <AlertTriangle className="h-3 w-3" />, className: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
-  failed: { label: "Failed", icon: <XCircle className="h-3 w-3" />, className: "bg-red-500/10 text-red-500 border-red-500/20" },
-  rolled_back: { label: "Rolled Back", icon: <XCircle className="h-3 w-3" />, className: "bg-orange-500/10 text-orange-500 border-orange-500/20" },
-  pending: { label: "Pending", icon: <Clock className="h-3 w-3" />, className: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
+  healthy: { label: "Healthy", icon: <CheckCircle className="h-3 w-3" />, className: "bg-green-50 text-green-700 border-green-200" },
+  degraded: { label: "Degraded", icon: <AlertTriangle className="h-3 w-3" />, className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  failed: { label: "Failed", icon: <XCircle className="h-3 w-3" />, className: "bg-red-50 text-red-700 border-red-200" },
+  rolled_back: { label: "Rolled Back", icon: <XCircle className="h-3 w-3" />, className: "bg-orange-50 text-orange-700 border-orange-200" },
+  pending: { label: "Pending", icon: <Clock className="h-3 w-3" />, className: "bg-stone-50 text-stone-600 border-stone-200" },
 }
 
 function HealthBar({ score }: { score: number }) {
@@ -80,7 +80,7 @@ export default function DeploymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Deployment History</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Deployment History</h1>
         <p className="text-sm text-muted-foreground">
           Track deployment events, health scores, and git context
         </p>
@@ -181,7 +181,7 @@ export default function DeploymentsPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
                         >
                           #{d.pr_number}
                           <ExternalLink className="h-3 w-3" />

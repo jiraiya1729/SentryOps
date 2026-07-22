@@ -39,7 +39,7 @@ class ApprovalManager:
             summary=summary,
             namespace=namespace,
             resource=resource,
-            remediation=remediations or []
+            remediations=remediations or []
         )
 
         self._notifications[investigation_id] = notification
@@ -57,7 +57,7 @@ class ApprovalManager:
         notifications = sorted(self._notifications.values(), key = lambda n: n.created_at, reverse=True)
         return notifications[:limit]
 
-    def get_notifications(self, investigation_id: int) -> ApprovalNotification | None:
+    def get_notification(self, investigation_id: str) -> ApprovalNotification | None:
         return self._notifications.get(investigation_id)
 
     def resolve(self, investigation_id: int, approved:bool, resolved_by: str = "user")-> ApprovalNotification:
@@ -79,7 +79,7 @@ class ApprovalManager:
 
     @property
     def pending_count(self) -> int:
-        return sum(1 for n in self._notifications.values if not n.resolved)
+        return sum(1 for n in self._notifications.values() if not n.resolved)
 
 
-approved_manager = ApprovalManager()
+approval_manager = ApprovalManager()

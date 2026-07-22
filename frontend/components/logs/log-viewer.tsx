@@ -232,7 +232,7 @@ export function LogViewer() {
       )}
 
       {liveMode && droppedCount > 0 && (
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-200 flex items-center gap-2">
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm text-yellow-800 flex items-center gap-2">
           <span className="font-medium">{droppedCount} lines dropped</span>
           <span className="text-muted-foreground">(high throughput)</span>
         </div>

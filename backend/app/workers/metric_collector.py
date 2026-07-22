@@ -41,13 +41,13 @@ class MetricsCollector:
         timestamp = datetime.now(timezone.utc)
         metrics_batch = []
 
-        pod_metrics = self._get_pod_metrics()
+        pod_metrics = await self._get_pod_metrics()
         metrics_batch.extend(pod_metrics)
 
-        node_metrics = self._get_node_metrics()
+        node_metrics = await self._get_node_metrics()
         metrics_batch.extend(node_metrics)
 
-        spec_metrics = self._get_pod_resource_specs()
+        spec_metrics = await self._get_pod_resource_specs()
         metrics_batch.extend(spec_metrics)
 
 
@@ -131,21 +131,26 @@ class MetricsCollector:
                     "namespace": "_nodes",
                     "pod_name": node_name,
                     "container_name": "",
-                    "metrics_name": "node_cpu_usage_cores",
-                    "metrics_value": cpu_cores,
+                    "metric_name": "node_cpu_usage_cores",
+                    "metric_value": cpu_cores,
                 })
 
                 metrics.append({
                     "namespace": "_nodes",
                     "pod_name": node_name,
                     "container_name": "",
-                    "metrics_name": "node_memory_usage_bytes",
-                    "metrics_value": memory_bytes,
+                    "metric_name": "node_memory_usage_bytes",
+                    "metric_value": memory_bytes,
                 })
 
+        except ApiException as e:
+            if e.status == 404:
+                logger.warning("Metrics Server not found for node metrics. Install it to enable node-level collection.")
+            else:
+                logger.error(f"Metrics API error (nodes): {e}")
         except Exception as e:
-            logger.error(f" Failed to get node metrics: {e}")
-        
+            logger.error(f"Failed to get node metrics: {e}")
+
         return metrics
 
 
@@ -176,7 +181,7 @@ class MetricsCollector:
                             "namespace": namespace,
                             "pod_name": pod_name,
                             "container_name": container_name,
-                            "metrics_name": "cpu_request_cores",
+                            "metric_name": "cpu_request_cores",
                             "metric_value": self._parse_cpu(requests["cpu"]),
                         })
                     if "memory" in requests:
@@ -184,7 +189,7 @@ class MetricsCollector:
                             "namespace": namespace,
                             "pod_name": pod_name,
                             "container_name": container_name,
-                            "metrics_name": "memory_request_bytes",
+                            "metric_name": "memory_request_bytes",
                             "metric_value": self._parse_memory(requests["memory"]),
                         })
                     if "cpu" in limits:
@@ -192,7 +197,7 @@ class MetricsCollector:
                             "namespace": namespace,
                             "pod_name": pod_name,
                             "container_name": container_name,
-                            "metrics_name": "cpu_limit_cores",
+                            "metric_name": "cpu_limit_cores",
                             "metric_value": self._parse_cpu(limits["cpu"]),
                         })
                     if "memory" in limits:
@@ -200,7 +205,7 @@ class MetricsCollector:
                             "namespace": namespace,
                             "pod_name": pod_name,
                             "container_name": container_name,
-                            "metrics_name": "memory_limit_bytes",
+                            "metric_name": "memory_limit_bytes",
                             "metric_value": self._parse_memory(limits["memory"]),
                         })
 
@@ -210,8 +215,6 @@ class MetricsCollector:
         return metrics
 
     async def _insert_metrics(self, metrics: list[dict], timestamp: datetime):
-        client = get_clickhouse_client()
-
         columns = [
             "timestamp", "cluster_id", "namespace", "pod_name",
             "container_name", "node_name", "metric_name", "metric_value", "labels",
@@ -231,9 +234,10 @@ class MetricsCollector:
                 {},
             ])
 
-        await asyncio.to_thread(
-            client.insert, "metrics", rows, column_names=columns
-        )
+        def _do_insert():
+            get_clickhouse_client().insert("metrics", rows, column_names=columns)
+
+        await asyncio.to_thread(_do_insert)
 
     @staticmethod
     def _parse_cpu(value: str) -> float:

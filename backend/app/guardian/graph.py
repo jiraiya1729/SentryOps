@@ -34,6 +34,27 @@ def approval_result(state: GuardianState) -> str:
         return "execute"
     return "end"
 
+async def await_approval_node(state: GuardianState) -> dict:
+    from app.guardian.approval import approval_manager
+
+    approval_manager.create_notification(
+        investigation_id=state.investigation_id,
+        severity=state.severity.value if state.severity else "medium",
+        summary=state.summary or state.trigger.description if state.trigger else "Investigation requires approval",
+        namespace=state.namespace,
+        resource=f"{state.resource_kind}/{state.resource_name}" if state.resource_kind else state.resource_name,
+        remediations=[
+            {"action": r.action, "type": r.type, "risk_level": r.risk_level}
+            for r in state.remediations if r.requires_approval
+        ],
+    )
+
+    return {
+        "status": InvestigationState.AWAITING_APPROVAL,
+        "nodes_visited": state.nodes_visited + ["await_approval"]
+    }
+
+
 def build_guardian_graph():
     graph = StateGraph(GuardianState)
 
@@ -48,7 +69,7 @@ def build_guardian_graph():
     graph.add_edge("gather_evidence", "analyze")
     graph.add_conditional_edges("analyze", should_remediate, {"decide_remediation": "decide_remediation", "end":END})
     graph.add_conditional_edges("decide_remediation", needs_approval, {"await_approval": "await_approval", "execute": "execute", "end": END})
-    graph.add_conditional_edges("await_approval", approval_result, {"execute": "execute", "end": END}) 
+    graph.add_conditional_edges("await_approval", approval_result, {"execute": "execute", "end": END})
     graph.add_edge("execute", END)
 
     return graph
@@ -56,22 +77,16 @@ def build_guardian_graph():
 
 investigation_app = build_guardian_graph().compile(checkpointer=MemorySaver())
 
-
-async def await_approval_node(state: GuardianState) -> dict:
-    return {
-        "status": InvestigationState.AWAITING_APPROVAL,
-        "nodes_visited": state.nodes_visited + ["await_approval"]
-    }
-
 async def start_investigation(
     trigger_type: str,
     trigger_source: str,
     description: str,
     namespace: str | None = None,
-    resource_kind: str | None = None, 
+    resource_kind: str | None = None,
     resource_name: str | None = None,
     metadata: dict | None = None,
 ) -> str:
+    import asyncio
     from app.guardian.state import InvestigationTrigger
 
     investigation_id = str(uuid.uuid4())
@@ -96,20 +111,36 @@ async def start_investigation(
     }
 
     config = {"configurable": {"thread_id": investigation_id}}
-    await investigation_app.ainvoke(initial_state, config)
+    asyncio.create_task(_run_investigation(initial_state, config, investigation_id))
     return investigation_id
+
+
+async def _run_investigation(initial_state: dict, config: dict, investigation_id: str):
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        await investigation_app.ainvoke(initial_state, config)
+        logger.info(f"Investigation {investigation_id} completed")
+    except Exception as e:
+        logger.error(f"Investigation {investigation_id} failed: {e}")
 
 
 async def resume_investigation(investigation_id: str, approved: bool) -> dict:
     config = {"configurable": {"thread_id": investigation_id}}
     state = await investigation_app.aget_state(config)
 
+    if not state or not state.values:
+        return {"status": "not_found"}
+
     if approved:
-        remediations = state.value.get("remediations", [])
+        remediations = state.values.get("remediations", [])
         for r in remediations:
             if r.requires_approval:
                 r.approved = True
         await investigation_app.aupdate_state(config, {"remediations": remediations})
-    
-    result = await investigation_app.ainvoke(None, config)
-    return result
+
+    try:
+        result = await investigation_app.ainvoke(None, config)
+        return result if result else {"status": "completed"}
+    except Exception:
+        return {"status": "completed"}

@@ -15,8 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartTooltip } from "./chart-tooltip"
 import { EmptyState } from "@/components/shared/empty-state"
-
-const LINE_COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#eab308", "#f97316"]
+import { CHART_COLORS, CHART_GRID_COLOR, CHART_AXIS_COLOR } from "@/lib/chart-colors"
 
 interface MemoryChartProps {
   data: Record<string, number | string>[]
@@ -95,17 +94,17 @@ export function MemoryChart({ data, series, memoryRequest, memoryLimit, onZoom }
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#3c4753" opacity={0.4} />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} opacity={0.6} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatTime}
-              stroke="#6b7280"
+              stroke={CHART_AXIS_COLOR}
               fontSize={11}
               tickLine={false}
             />
             <YAxis
               tickFormatter={formatBytes}
-              stroke="#6b7280"
+              stroke={CHART_AXIS_COLOR}
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -118,7 +117,7 @@ export function MemoryChart({ data, series, memoryRequest, memoryLimit, onZoom }
                 key={name}
                 type="monotone"
                 dataKey={name}
-                stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                stroke={CHART_COLORS[i % CHART_COLORS.length]}
                 strokeWidth={1.5}
                 dot={false}
                 activeDot={{ r: 3 }}
@@ -127,25 +126,25 @@ export function MemoryChart({ data, series, memoryRequest, memoryLimit, onZoom }
             {memoryRequest !== undefined && (
               <ReferenceLine
                 y={memoryRequest}
-                stroke="#3b82f6"
+                stroke="#7c3aed"
                 strokeDasharray="5 5"
                 strokeWidth={1}
-                label={{ value: "request", position: "right", fill: "#3b82f6", fontSize: 10 }}
+                label={{ value: "request", position: "right", fill: "#7c3aed", fontSize: 10 }}
               />
             )}
             {memoryLimit !== undefined && (
               <ReferenceLine
                 y={memoryLimit}
-                stroke="#ef4444"
+                stroke="#dc2626"
                 strokeDasharray="5 5"
                 strokeWidth={1}
-                label={{ value: "limit", position: "right", fill: "#ef4444", fontSize: 10 }}
+                label={{ value: "limit", position: "right", fill: "#dc2626", fontSize: 10 }}
               />
             )}
             {warningThreshold !== undefined && (
               <ReferenceLine
                 y={warningThreshold}
-                stroke="#ef4444"
+                stroke="#dc2626"
                 strokeDasharray="2 4"
                 strokeWidth={0.5}
                 strokeOpacity={0.5}
@@ -156,7 +155,7 @@ export function MemoryChart({ data, series, memoryRequest, memoryLimit, onZoom }
                 x1={refAreaLeft}
                 x2={refAreaRight}
                 strokeOpacity={0.3}
-                fill="#8b5cf6"
+                fill="#7c3aed"
                 fillOpacity={0.1}
               />
             )}

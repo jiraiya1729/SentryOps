@@ -99,11 +99,11 @@ export function PodMetricsSection({ namespace, name }: PodMetricsSectionProps) {
             <CardContent>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={cpuData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#3c4753" opacity={0.4} />
-                  <XAxis dataKey="timestamp" tickFormatter={formatTime} stroke="#6b7280" fontSize={10} tickLine={false} />
-                  <YAxis tickFormatter={formatMillicores} stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" opacity={0.4} />
+                  <XAxis dataKey="timestamp" tickFormatter={formatTime} stroke="#a8a29e" fontSize={10} tickLine={false} />
+                  <YAxis tickFormatter={formatMillicores} stroke="#a8a29e" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip content={<ChartTooltip formatValue={formatMillicores} />} />
-                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -116,11 +116,11 @@ export function PodMetricsSection({ namespace, name }: PodMetricsSectionProps) {
             <CardContent>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={memoryData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#3c4753" opacity={0.4} />
-                  <XAxis dataKey="timestamp" tickFormatter={formatTime} stroke="#6b7280" fontSize={10} tickLine={false} />
-                  <YAxis tickFormatter={formatBytes} stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" opacity={0.4} />
+                  <XAxis dataKey="timestamp" tickFormatter={formatTime} stroke="#a8a29e" fontSize={10} tickLine={false} />
+                  <YAxis tickFormatter={formatBytes} stroke="#a8a29e" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip content={<ChartTooltip formatValue={formatBytes} />} />
-                  <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="value" stroke="#0d9488" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>

@@ -55,7 +55,7 @@ export default function ClusterPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Cluster Overview</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Cluster Overview</h1>
         <p className="text-sm text-muted-foreground">
           Monitor your Kubernetes cluster resources
         </p>

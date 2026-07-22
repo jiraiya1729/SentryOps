@@ -7,7 +7,7 @@ export default async function NodesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Nodes</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Nodes</h1>
         <p className="text-sm text-muted-foreground">
           Cluster nodes and their status
         </p>

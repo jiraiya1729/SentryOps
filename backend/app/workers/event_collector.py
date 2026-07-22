@@ -38,6 +38,7 @@ class EventCollector:
 
     async def _watch_events(self):
         w = watch.Watch()
+        loop = asyncio.get_running_loop()
 
         while self._running:
             try:
@@ -47,18 +48,34 @@ class EventCollector:
                 if self._resource_version:
                     kwargs["resource_version"] = self._resource_version
 
-                stream = await asyncio.to_thread(
-                    w.stream,
-                    core_v1.list_event_for_all_namespaces,
-                    **kwargs,
-                )
+                queue: asyncio.Queue = asyncio.Queue(maxsize=500)
 
-                for raw_event in stream:
-                    if not self._running:
+                def blocking_watch():
+                    try:
+                        for raw_event in w.stream(
+                            core_v1.list_event_for_all_namespaces,
+                            **kwargs,
+                        ):
+                            loop.call_soon_threadsafe(queue.put_nowait, ("event", raw_event))
+                            if not self._running:
+                                w.stop()
+                                break
+                    except Exception as exc:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("error", exc))
+                    finally:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
+
+                watch_future = loop.run_in_executor(None, blocking_watch)
+
+                while True:
+                    kind, data = await queue.get()
+                    if kind == "done":
                         break
+                    if kind == "error":
+                        raise data
 
-                    event_type = raw_event["type"]  
-                    event = raw_event["object"]
+                    event_type = data["type"]
+                    event = data["object"]
 
                     self._resource_version = event.metadata.resource_version
 
@@ -69,9 +86,10 @@ class EventCollector:
                         if len(self._buffer) >= self._batch_size:
                             await self._flush()
 
+                await watch_future
+
             except ApiException as e:
                 if e.status == 410:
-               
                     logger.warning("Event watch expired, re-listing...")
                     self._resource_version = ""
                 else:
@@ -145,10 +163,10 @@ class EventCollector:
             "type": event.type or "Normal",
             "reason": event.reason or "",
             "message": event.message or "",
-            "involved_object_kind": event.involved_object.kind if event.involved_object else "",
-            "involved_object_name": event.involved_object.name if event.involved_object else "",
-            "involved_object_namespace": event.involved_object.namespace if event.involved_object else "",
-            "source_component": event.source.component if event.source else "",
+            "involved_object_kind": (event.involved_object.kind or "") if event.involved_object else "",
+            "involved_object_name": (event.involved_object.name or "") if event.involved_object else "",
+            "involved_object_namespace": (event.involved_object.namespace or "") if event.involved_object else "",
+            "source_component": (event.source.component or "") if event.source else "",
             "count": event.count or 1,
             "first_timestamp": first_ts.replace(tzinfo=timezone.utc) if first_ts else datetime.now(timezone.utc),
             "last_timestamp": last_ts.replace(tzinfo=timezone.utc) if last_ts else datetime.now(timezone.utc),

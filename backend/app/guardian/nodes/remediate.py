@@ -30,7 +30,6 @@ async def decide_remediation_node(state: GuardianState) -> dict:
                 r.requires_approval = True
 
     return {
-        "reediations": remediations,
+        "remediations": remediations,
         "nodes_visited": state.nodes_visited + ["decide_remediation"]
-        
     }

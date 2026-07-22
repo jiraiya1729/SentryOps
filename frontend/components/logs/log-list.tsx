@@ -68,23 +68,23 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
   }
 
   const levelBorderColor: Record<string, string> = {
-    FATAL: "border-l-red-500",
-    ERROR: "border-l-red-400",
-    WARN: "border-l-yellow-400",
-    INFO: "border-l-blue-400",
-    DEBUG: "border-l-zinc-500",
-    TRACE: "border-l-zinc-600",
-    UNKNOWN: "border-l-zinc-600",
+    FATAL: "border-l-red-600",
+    ERROR: "border-l-red-500",
+    WARN: "border-l-yellow-600",
+    INFO: "border-l-violet-500",
+    DEBUG: "border-l-stone-400",
+    TRACE: "border-l-stone-300",
+    UNKNOWN: "border-l-stone-300",
   }
 
   const levelTextColor: Record<string, string> = {
-    FATAL: "text-red-400",
-    ERROR: "text-red-400",
-    WARN: "text-yellow-400",
-    INFO: "text-blue-400",
-    DEBUG: "text-zinc-500",
-    TRACE: "text-zinc-600",
-    UNKNOWN: "text-zinc-600",
+    FATAL: "text-red-700",
+    ERROR: "text-red-600",
+    WARN: "text-yellow-700",
+    INFO: "text-violet-600",
+    DEBUG: "text-stone-500",
+    TRACE: "text-stone-400",
+    UNKNOWN: "text-stone-400",
   }
 
   return (
@@ -94,7 +94,7 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
     )}>
       <div className={cn(
         "h-9 px-4 flex items-center justify-between",
-        liveMode ? "bg-zinc-900/80 border-b border-green-500/10" : "bg-muted/50"
+        liveMode ? "bg-green-50 border-b border-green-200" : "bg-muted/50"
       )}>
         <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-2">
           {liveMode && (
@@ -116,7 +116,7 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
         onScroll={handleScroll}
         className={cn(
           "max-h-[calc(100vh-360px)] overflow-y-auto",
-          liveMode ? "bg-zinc-950/50" : "divide-y divide-border"
+          liveMode ? "bg-stone-50" : "divide-y divide-border"
         )}
       >
         {logs.map((log, index) => {
@@ -128,8 +128,8 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
                   "flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors font-mono text-xs",
                   liveMode
                     ? cn(
-                        "border-l-2 hover:bg-zinc-800/50",
-                        levelBorderColor[log.log_level] || "border-l-zinc-600"
+                        "border-l-2 hover:bg-stone-100",
+                        levelBorderColor[log.log_level] || "border-l-stone-300"
                       )
                     : cn(
                         "hover:bg-muted/30",
@@ -146,14 +146,14 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
                 />
                 <span className={cn(
                   "shrink-0 w-20 text-[11px]",
-                  liveMode ? "text-zinc-500" : "text-muted-foreground"
+                  liveMode ? "text-stone-500" : "text-muted-foreground"
                 )}>
                   {formatTimestamp(log.timestamp)}
                 </span>
                 {liveMode ? (
                   <span className={cn(
                     "shrink-0 w-12 text-[10px] font-bold uppercase",
-                    levelTextColor[log.log_level] || "text-zinc-500"
+                    levelTextColor[log.log_level] || "text-stone-500"
                   )}>
                     {log.log_level}
                   </span>
@@ -162,13 +162,13 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
                 )}
                 <span className={cn(
                   "shrink-0 max-w-36 truncate text-[11px]",
-                  liveMode ? "text-cyan-400/70" : "text-muted-foreground"
+                  liveMode ? "text-teal-700" : "text-muted-foreground"
                 )}>
                   {log.pod_name}
                 </span>
                 <span className={cn(
                   "truncate",
-                  liveMode ? "text-zinc-300" : "text-foreground"
+                  liveMode ? "text-foreground" : "text-foreground"
                 )}>
                   {log.message}
                 </span>
@@ -176,7 +176,7 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
               {isExpanded && (
                 <div className={cn(
                   "px-3 py-3 border-t border-border/50",
-                  liveMode ? "bg-zinc-900/60" : "bg-muted/10"
+                  liveMode ? "bg-stone-100" : "bg-muted/10"
                 )}>
                   <div className="ml-5 space-y-3">
                     <div>
@@ -241,7 +241,7 @@ export function LogList({ logs, total, isLoading, liveMode }: LogListProps) {
           <Button
             variant="secondary"
             size="xs"
-            className="shadow-lg text-[11px] gap-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600"
+            className="shadow-lg text-[11px] gap-1 bg-white hover:bg-stone-50 text-foreground border border-stone-200"
             onClick={() => {
               const el = scrollContainerRef.current
               if (el) {
